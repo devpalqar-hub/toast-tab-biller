@@ -15,6 +15,7 @@ class BillerdashBoardScreen extends StatelessWidget {
             Expanded(
               child: Row(
                 children: [
+                  
                   TableStatusView(),
                   Expanded(child: MenuListingView()),
                   BillSummaryView(),

@@ -3,6 +3,7 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/route_manager.dart';
 import 'package:toasttab/Screens/AuthenticationScreen/AuthenticationScreen.dart';
 
+final String baseUrl = "https://api.pos.palqar.cloud/api/v1";
 void main() {
   runApp(const MainApp());
 }
