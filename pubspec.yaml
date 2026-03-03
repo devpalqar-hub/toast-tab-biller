@@ -12,9 +12,9 @@ dependencies:
   flutter_screenutil: ^5.9.3
   fluttertoast: ^9.0.0
   get: ^4.7.3
+  http: ^1.6.0
   shared_preferences: ^2.5.4
   pinput: ^6.0.2
-  http: ^1.6.0
 
 dev_dependencies:
   flutter_test:

@@ -4,9 +4,8 @@ import 'package:get/get.dart';
 import 'package:pinput/pinput.dart';
 import 'package:toasttab/Screens/AuthenticationScreen/Service/AuthenticationController.dart';
 
-
 class AuthenticationScreen extends StatelessWidget {
-  const AuthenticationScreen({super.key});
+  AuthenticationScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -27,7 +26,7 @@ class AuthenticationScreen extends StatelessWidget {
                   color: Colors.black12,
                   blurRadius: 15.r,
                   offset: const Offset(0, 5),
-                )
+                ),
               ],
             ),
             child: GetBuilder<AuthController>(
@@ -35,8 +34,6 @@ class AuthenticationScreen extends StatelessWidget {
                 return Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-
-                  
                     Text(
                       "Welcome back",
                       style: TextStyle(
@@ -51,10 +48,7 @@ class AuthenticationScreen extends StatelessWidget {
                     Text(
                       "Log in to manage your floor and kitchen.",
                       textAlign: TextAlign.center,
-                      style: TextStyle(
-                        fontSize: 12.sp,
-                        color: Colors.grey,
-                      ),
+                      style: TextStyle(fontSize: 12.sp, color: Colors.grey),
                     ),
 
                     SizedBox(height: 25.h),
@@ -67,13 +61,13 @@ class AuthenticationScreen extends StatelessWidget {
                         color: Color(0xff64748B),
                       ),
                     ),
-                      SizedBox(height: 10.h),
-                   Divider(
+                    SizedBox(height: 10.h),
+                    Divider(
                       height: 2.h,
                       thickness: 1,
                       color: Color(0xff1F89E5),
                     ),
-                      SizedBox(height: 25.h),
+                    SizedBox(height: 25.h),
                     Align(
                       alignment: Alignment.centerLeft,
                       child: Text(
@@ -90,9 +84,12 @@ class AuthenticationScreen extends StatelessWidget {
                     TextField(
                       controller: controller.emailController,
                       decoration: InputDecoration(
-                        hintText: "name@restaurant.com",hintStyle: TextStyle(color: Colors.grey),
+                        hintText: "name@restaurant.com",
+                        hintStyle: TextStyle(color: Colors.grey),
                         contentPadding: EdgeInsets.symmetric(
-                            horizontal: 12.w, vertical: 14.h),
+                          horizontal: 12.w,
+                          vertical: 14.h,
+                        ),
                         border: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(16.r),
                           borderSide: BorderSide(color: Color(0xffE2E8F0)),
@@ -102,7 +99,6 @@ class AuthenticationScreen extends StatelessWidget {
 
                     SizedBox(height: 20.h),
 
-             
                     if (controller.isOtpSent) ...[
                       Align(
                         alignment: Alignment.centerLeft,
@@ -137,7 +133,6 @@ class AuthenticationScreen extends StatelessWidget {
                       SizedBox(height: 20.h),
                     ],
 
-        
                     SizedBox(
                       width: double.infinity,
                       height: 52.h,
@@ -151,8 +146,8 @@ class AuthenticationScreen extends StatelessWidget {
                         onPressed: controller.isLoading
                             ? null
                             : controller.isOtpSent
-                                ? controller.verifyOtp
-                                : controller.sendOtp,
+                            ? controller.verifyOtp
+                            : controller.sendOtp,
                         child: controller.isLoading
                             ? SizedBox(
                                 height: 20.h,
@@ -177,13 +172,9 @@ class AuthenticationScreen extends StatelessWidget {
 
                     SizedBox(height: 20.h),
 
-                    
                     Text(
                       "Don't have an account? Contact Sales",
-                      style: TextStyle(
-                        fontSize: 11.sp,
-                        color: Colors.grey,
-                      ),
+                      style: TextStyle(fontSize: 11.sp, color: Colors.grey),
                     ),
                   ],
                 );
