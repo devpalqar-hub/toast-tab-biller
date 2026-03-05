@@ -4,6 +4,9 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import 'package:http/http.dart' as http;
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:toasttab/Screens/BillerDashboard/BillerDashboardScreen.dart';
+import 'package:toasttab/main.dart';
 
 class AuthController extends GetxController {
   final emailController = TextEditingController();
@@ -12,7 +15,7 @@ class AuthController extends GetxController {
   bool isLoading = false;
   bool isOtpSent = false;
 
-  final String baseUrl = "https://api.pos.palqar.cloud/api/v1";
+  
 
   void showToast(String message, {bool isError = false}) {
     Fluttertoast.showToast(
@@ -53,12 +56,12 @@ Future<void> sendOtp() async {
   if (response.statusCode == 200 && data["success"] == true) {
     isOtpSent = true;
     update();
-    showToast("OTP sent successfully");
+    //
   } else {
-    showToast(
-      data["message"] ?? "Email not found",
-      isError: true,
-    );
+    //showToast(
+      //data["message"] ?? "Email not found",
+     // isError: true,
+    //);
   }
 }
   Future<void> verifyOtp() async {
@@ -96,10 +99,25 @@ Future<void> sendOtp() async {
 
     final data = jsonDecode(response.body);
 
-    if (response.statusCode == 200) {
-      showToast("Login Successful");
-    } else {
-      showToast(data["message"] ?? "Invalid OTP", isError: true);
-    }
+    if (response.statusCode == 200 && data["success"] == true) {
+  final restaurantId =
+      data["data"]["user"]["restaurant"]["id"];
+  final restaurantName =
+      data["data"]["user"]["restaurant"]["name"];
+  final accessToken =
+      data["data"]["accessToken"];
+
+  final prefs = await SharedPreferences.getInstance();
+
+  await prefs.setString("restaurantId", restaurantId);
+  await prefs.setString("restaurantName", restaurantName);
+  await prefs.setString("accessToken", accessToken);
+
+  //showToast("Login Successful");
+   Get.offAll(() => const BillerdashBoardScreen());
+
+  log("Saved Restaurant ID: $restaurantId");
+  log("Saved Restaurant Name: $restaurantName");
+}
   }
 }
