@@ -1,6 +1,7 @@
+
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
-import 'package:get/get.dart';
+import 'package:get/get_state_manager/src/simple/get_state.dart';
 import 'package:toasttab/Screens/BillerDashboard/Service/DashBoardContoller.dart';
 
 class TableStatusView extends StatelessWidget {
@@ -12,27 +13,76 @@ class TableStatusView extends StatelessWidget {
       init: DashboardController(),
       builder: (controller) {
         if (controller.isLoading) {
-          return const Center(child: CircularProgressIndicator());
+          return SizedBox(
+            width: 260.w,
+            child: const Center(child: CircularProgressIndicator()),
+          );
         }
+
         if (controller.tables.isEmpty) {
-          return const Center(child: Text("No Tables Found"));
+          return SizedBox(
+            width: 260.w,
+            child: const Center(child: Text("No Tables Found")),
+          );
         }
-        return Expanded(
-          child: Padding(
+
+        return Center(
+          child: Container(
+            width: 280.w,
             padding: EdgeInsets.all(16.w),
-            child: ListView.separated(
-              itemCount: controller.tables.length,
-              separatorBuilder: (_, __) => SizedBox(height: 16.h),
-              itemBuilder: (context, index) {
-                final table = controller.tables[index];
-                final statusStyle = _getStatusStyle(table.status);
-                return SessionCard(
-                  tableName: table.name,
-                  status: table.status,
-                  statusColor: statusStyle["color"]!, 
-                  backgroundColor: statusStyle["bgColor"]!, 
-                );
-              },
+            decoration: BoxDecoration(
+              color: Colors.white,
+             
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.grey.withOpacity(0.1),
+                  spreadRadius: 2,
+                  blurRadius: 5,
+                  offset: const Offset(0, 3),
+                ),
+              ],
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Header portion
+                 Text(
+                    "TABLE OVERVIEW",
+                    style: TextStyle(
+                      fontSize: 12.sp,
+                      fontWeight: FontWeight.bold,
+                      color: Color(0xff94A3B8),
+                    ),
+                  ),
+                
+                SizedBox(height: 8.h),
+                Divider(
+                  color: Colors.grey.shade300,
+                  thickness: 1.w,
+               
+                  
+                ),
+                SizedBox(height: 12.h),
+
+                // List of tables
+                Expanded(
+                
+                  child: ListView.separated(
+                    itemCount: controller.tables.length,
+                    separatorBuilder: (_, __) => SizedBox(height: 12.h),
+                    itemBuilder: (context, index) {
+                      final table = controller.tables[index];
+                      final statusStyle = _getStatusStyle(table.status);
+                      return SessionCard(
+                        tableName: table.name,
+                        status: table.status,
+                        statusColor: statusStyle["color"]!,
+                        backgroundColor: statusStyle["bgColor"]!,
+                      );
+                    },
+                  ),
+                ),
+              ],
             ),
           ),
         );
@@ -40,38 +90,24 @@ class TableStatusView extends StatelessWidget {
     );
   }
 
- 
   Map<String, Color> _getStatusStyle(String status) {
     switch (status.toLowerCase()) {
       case "billing":
-        return {
-          "color": Colors.red,
-          "bgColor": Colors.red.withOpacity(0.1),
-        };
+        return {"color": Colors.red, "bgColor": Colors.red.withOpacity(0.1)};
       case "occupied":
-        return {
-          "color": Colors.orange,
-          "bgColor": Colors.orange.withOpacity(0.1),
-        };
+        return {"color": Colors.orange, "bgColor": Colors.orange.withOpacity(0.1)};
       case "available":
-        return {
-          "color": Colors.green,
-          "bgColor": Colors.green.withOpacity(0.1),
-        };
+        return {"color": Colors.green, "bgColor": Colors.green.withOpacity(0.1)};
       default:
-        return {
-          "color": Colors.grey,
-          "bgColor": Colors.grey.withOpacity(0.1),
-        };
+        return {"color": Colors.grey, "bgColor": Colors.grey.withOpacity(0.1)};
     }
   }
 }
-
 class SessionCard extends StatelessWidget {
   final String tableName;
   final String status;
   final Color statusColor;
-  final Color backgroundColor;
+  final Color backgroundColor; // you can ignore this now if always white
   final List<SessionItem>? sessions;
   final bool isSelected;
 
@@ -91,12 +127,20 @@ class SessionCard extends StatelessWidget {
       width: 215.w,
       padding: EdgeInsets.all(16.w),
       decoration: BoxDecoration(
-        color: backgroundColor,
+        color: Colors.white, // changed to white
         borderRadius: BorderRadius.circular(20.r),
         border: Border.all(
           color: isSelected ? statusColor : statusColor.withOpacity(0.3),
           width: isSelected ? 3.w : 1.5.w,
         ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.grey.withOpacity(0.1),
+            spreadRadius: 2,
+            blurRadius: 5,
+            offset: const Offset(0, 3), // shadow position
+          ),
+        ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -112,10 +156,7 @@ class SessionCard extends StatelessWidget {
                 ),
               ),
               Container(
-                padding: EdgeInsets.symmetric(
-                  horizontal: 14.w,
-                  vertical: 6.h,
-                ),
+                padding: EdgeInsets.symmetric(horizontal: 14.w, vertical: 6.h),
                 decoration: BoxDecoration(
                   color: statusColor.withOpacity(0.15),
                   borderRadius: BorderRadius.circular(20.r),
@@ -131,7 +172,6 @@ class SessionCard extends StatelessWidget {
               ),
             ],
           ),
-
           if (sessions != null && sessions!.isNotEmpty) ...[
             SizedBox(height: 14.h),
             Column(
