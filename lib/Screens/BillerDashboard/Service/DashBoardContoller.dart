@@ -5,7 +5,7 @@ import 'package:get/get.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:toasttab/Screens/BillerDashboard/Model/TableModel.dart';
+import 'package:toasttab/Screens/BillerDashboard/Models/Response/TableModel.dart';
 import 'package:toasttab/main.dart';
 
 class DashboardController extends GetxController {
