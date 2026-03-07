@@ -4,6 +4,9 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import 'package:http/http.dart' as http;
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:toasttab/Screens/BillerDashboard/BillerDashboardScreen.dart';
+import 'package:toasttab/main.dart';
 
 class AuthController extends GetxController {
   final emailController = TextEditingController();
@@ -12,55 +15,52 @@ class AuthController extends GetxController {
   bool isLoading = false;
   bool isOtpSent = false;
 
-  final String baseUrl = "https://api.pos.palqar.cloud/api/v1";
-
   void showToast(String message, {bool isError = false}) {
-    Fluttertoast.showToast(
-      msg: message,
-      toastLength: Toast.LENGTH_SHORT,
-      gravity: ToastGravity.BOTTOM,
-      backgroundColor: isError ? Colors.red : Colors.green,
-      textColor: Colors.white,
-    );
+    // Fluttertoast.showToast(
+    //   msg: message,
+    //   toastLength: Toast.LENGTH_SHORT,
+    //   gravity: ToastGravity.BOTTOM,
+    //   backgroundColor: isError ? Colors.red : Colors.green,
+    //   textColor: Colors.white,
+    // );
   }
 
-Future<void> sendOtp() async {
-  if (emailController.text.isEmpty) {
-    showToast("Please enter email", isError: true);
-    return;
-  }
+  Future<void> sendOtp() async {
+    if (emailController.text.isEmpty) {
+      showToast("Please enter email", isError: true);
+      return;
+    }
 
-  isLoading = true;
-  update();
-
-  final url = "$baseUrl/auth/send-otp";
-
-  final body = {
-    "email": emailController.text.trim(),
-  };
-
-  final response = await http.post(
-    Uri.parse(url),
-    headers: {"Content-Type": "application/json"},
-    body: jsonEncode(body),
-  );
-
-  isLoading = false;
-  update();
-
-  final data = jsonDecode(response.body);
-
-  if (response.statusCode == 200 && data["success"] == true) {
-    isOtpSent = true;
+    isLoading = true;
     update();
-    showToast("OTP sent successfully");
-  } else {
-    showToast(
-      data["message"] ?? "Email not found",
-      isError: true,
+
+    final url = "$baseUrl/auth/send-otp";
+
+    final body = {"email": emailController.text.trim()};
+
+    final response = await http.post(
+      Uri.parse(url),
+      headers: {"Content-Type": "application/json"},
+      body: jsonEncode(body),
     );
+
+    isLoading = false;
+    update();
+
+    final data = jsonDecode(response.body);
+
+    if (response.statusCode == 200 && data["success"] == true) {
+      isOtpSent = true;
+      update();
+      //
+    } else {
+      //showToast(
+      //data["message"] ?? "Email not found",
+      // isError: true,
+      //);
+    }
   }
-}
+
   Future<void> verifyOtp() async {
     if (otpController.text.length != 6) {
       showToast("Enter valid 6 digit OTP", isError: true);
@@ -77,7 +77,6 @@ Future<void> sendOtp() async {
       "otp": otpController.text.trim(),
     };
 
-   
     log("URL: $url");
 
     log("Request Body: ${jsonEncode(body)}");
@@ -96,10 +95,24 @@ Future<void> sendOtp() async {
 
     final data = jsonDecode(response.body);
 
-    if (response.statusCode == 200) {
-      showToast("Login Successful");
-    } else {
-      showToast(data["message"] ?? "Invalid OTP", isError: true);
+    if (response.statusCode == 200 && data["success"] == true) {
+      final resID = data["data"]["user"]["restaurant"]["id"];
+      final restaurantName = data["data"]["user"]["restaurant"]["name"];
+      final accessToken = data["data"]["accessToken"];
+
+      final prefs = await SharedPreferences.getInstance();
+
+      await prefs.setString("restaurantId", resID);
+      await prefs.setString("restaurantName", restaurantName);
+      await prefs.setString("accessToken", accessToken);
+      authToken = accessToken;
+      restaurantId = resID;
+
+      //showToast("Login Successful");
+      Get.offAll(() => const BillerdashBoardScreen());
+
+      log("Saved Restaurant ID: $restaurantId");
+      log("Saved Restaurant Name: $restaurantName");
     }
   }
 }
