@@ -4,6 +4,8 @@ import 'package:get/get.dart';
 import 'package:toasttab/Screens/BillerDashboard/Models/Response/CustomerModel.dart';
 import 'package:toasttab/Screens/BillerDashboard/Service/BillerController.dart';
 import 'package:toasttab/Screens/BillerDashboard/Service/DashBoardContoller.dart';
+import 'package:toasttab/Screens/BillerDashboard/Service/PrinterController.dart';
+import 'package:toasttab/Screens/BillerDashboard/Views/Printers/PrinterSettingsDialog.dart';
 import 'package:toasttab/Utils/SearchTextField.dart';
 
 class Billdialog extends StatefulWidget {
@@ -15,6 +17,7 @@ class Billdialog extends StatefulWidget {
 
 class _BilldialogState extends State<Billdialog> {
   final DashboardController controller = Get.find();
+  final PrinterController printerCtrl = Get.find();
 
   @override
   Widget build(BuildContext context) {
@@ -34,7 +37,7 @@ class _BilldialogState extends State<Billdialog> {
               child: Row(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  // ── LEFT: Customer info ──────────────────────
+                  // ── LEFT: Customer info ──────────────────────────
                   Expanded(
                     flex: 11,
                     child: Container(
@@ -43,7 +46,7 @@ class _BilldialogState extends State<Billdialog> {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          // Header
+                          // Header row
                           Row(
                             children: [
                               Expanded(
@@ -71,7 +74,6 @@ class _BilldialogState extends State<Billdialog> {
                                   ],
                                 ),
                               ),
-                              // Close
                               GestureDetector(
                                 onTap: () => Get.back(),
                                 child: Container(
@@ -120,7 +122,6 @@ class _BilldialogState extends State<Billdialog> {
                           ),
                           SizedBox(height: 10.h),
 
-                          // Phone + Email in a row
                           Row(
                             children: [
                               Expanded(
@@ -150,7 +151,7 @@ class _BilldialogState extends State<Billdialog> {
                           ),
                           SizedBox(height: 12.h),
 
-                          // Loyalty redemption
+                          // Loyalty
                           GestureDetector(
                             onTap: () {
                               __.claimLoyality = !__.claimLoyality;
@@ -208,14 +209,13 @@ class _BilldialogState extends State<Billdialog> {
                     ),
                   ),
 
-                  // ── Divider ──────────────────────────────────
                   VerticalDivider(
                     width: 1,
                     thickness: 1,
                     color: const Color(0xFFE2E8F0),
                   ),
 
-                  // ── RIGHT: Bill summary & actions ────────────
+                  // ── RIGHT: Bill summary & actions ────────────────
                   Expanded(
                     flex: 9,
                     child: Container(
@@ -224,14 +224,75 @@ class _BilldialogState extends State<Billdialog> {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text(
-                            "Bill summary",
-                            style: TextStyle(
-                              fontSize: 12.sp,
-                              fontWeight: FontWeight.w600,
-                              color: const Color(0xFF64748B),
-                              letterSpacing: 0.2,
-                            ),
+                          // Bill summary header with printer status indicator
+                          Row(
+                            children: [
+                              Text(
+                                "Bill summary",
+                                style: TextStyle(
+                                  fontSize: 12.sp,
+                                  fontWeight: FontWeight.w600,
+                                  color: const Color(0xFF64748B),
+                                  letterSpacing: 0.2,
+                                ),
+                              ),
+                              const Spacer(),
+                              // Mini printer status badge
+                              GetBuilder<PrinterController>(
+                                builder: (p) => GestureDetector(
+                                  onTap: () {
+                                    Get.back();
+                                    Get.dialog(
+                                      const PrinterSettingsDialog(),
+                                      barrierDismissible: true,
+                                      barrierColor: Colors.black54,
+                                    );
+                                  },
+                                  child: Container(
+                                    padding: EdgeInsets.symmetric(
+                                      horizontal: 6.w,
+                                      vertical: 3.h,
+                                    ),
+                                    decoration: BoxDecoration(
+                                      color: p.isConnected
+                                          ? const Color(0xFFECFDF5)
+                                          : const Color(0xFFF1F5F9),
+                                      borderRadius: BorderRadius.circular(5.r),
+                                      border: Border.all(
+                                        color: p.isConnected
+                                            ? const Color(
+                                                0xFF10B981,
+                                              ).withOpacity(0.3)
+                                            : const Color(0xFFE2E8F0),
+                                      ),
+                                    ),
+                                    child: Row(
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        Container(
+                                          width: 5.w,
+                                          height: 5.w,
+                                          decoration: BoxDecoration(
+                                            shape: BoxShape.circle,
+                                            color: p.isConnected
+                                                ? const Color(0xFF10B981)
+                                                : const Color(0xFFCBD5E1),
+                                          ),
+                                        ),
+                                        SizedBox(width: 4.w),
+                                        Icon(
+                                          Icons.print_outlined,
+                                          size: 10.sp,
+                                          color: p.isConnected
+                                              ? const Color(0xFF10B981)
+                                              : const Color(0xFF94A3B8),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ],
                           ),
                           SizedBox(height: 12.h),
 
@@ -265,7 +326,6 @@ class _BilldialogState extends State<Billdialog> {
                             ),
                           ),
 
-                          // Grand total
                           Row(
                             mainAxisAlignment: MainAxisAlignment.spaceBetween,
                             crossAxisAlignment: CrossAxisAlignment.end,
@@ -292,15 +352,63 @@ class _BilldialogState extends State<Billdialog> {
 
                           const Spacer(),
 
-                          // Action buttons
-                          _ActionBtn(
-                            label: "Print bill",
-                            icon: Icons.print_outlined,
-                            bg: const Color(0xFFF1F5F9),
-                            fg: const Color(0xFF475569),
-                            onTap: () {},
+                          // ── Print Bill button ─────────────────────
+                          GetBuilder<PrinterController>(
+                            builder: (p) => _ActionBtn(
+                              label: p.isPrinting
+                                  ? "Printing..."
+                                  : p.mockMode
+                                  ? "Preview receipt"
+                                  : p.isConnected
+                                  ? "Print bill"
+                                  : "Print bill (no printer)",
+                              icon: p.isPrinting
+                                  ? Icons.hourglass_top_rounded
+                                  : p.mockMode
+                                  ? Icons.receipt_long_outlined
+                                  : Icons.print_outlined,
+                              bg: p.mockMode
+                                  ? const Color(0xFFFFF4EC)
+                                  : p.isConnected
+                                  ? const Color(0xFFF1F5F9)
+                                  : const Color(0xFFFEF2F2),
+                              fg: p.mockMode
+                                  ? const Color(0xFFF2994A)
+                                  : p.isConnected
+                                  ? const Color(0xFF475569)
+                                  : const Color(0xFFEF4444),
+                              onTap: p.isPrinting
+                                  ? () {}
+                                  : () {
+                                      if (!p.canPrint) {
+                                        // Open printer settings if not connected and not mock
+                                        Get.back();
+                                        Get.dialog(
+                                          const PrinterSettingsDialog(),
+                                          barrierDismissible: true,
+                                          barrierColor: Colors.black54,
+                                        );
+                                        return;
+                                      }
+                                      if (__.billSummary != null) {
+                                        p.printBill(
+                                          context: context,
+                                          bill: __.billSummary!,
+                                          tableName:
+                                              __.selectedTable?.name ?? "Table",
+                                          restaurantName: "Agnes Bill",
+                                          restaurantAddress:
+                                              "123 Main Street, City",
+                                          restaurantPhone: "+1 234 567 8900",
+                                        );
+                                      }
+                                    },
+                            ),
                           ),
+
                           SizedBox(height: 8.h),
+
+                          // ── Mark as paid ──────────────────────────
                           _ActionBtn(
                             label: "Mark as paid & close",
                             icon: Icons.check_circle_outline,
@@ -341,8 +449,7 @@ class _BilldialogState extends State<Billdialog> {
   }
 }
 
-// ── Helpers ───────────────────────────────────────────────────────────────────
-
+// ── Helpers (unchanged from original) ─────────────────────────────────────────
 class _Label extends StatelessWidget {
   final String text;
   const _Label(this.text);
@@ -387,8 +494,7 @@ class _Field extends StatelessWidget {
 }
 
 class _SummaryRow extends StatelessWidget {
-  final String label;
-  final String value;
+  final String label, value;
   final bool isDiscount;
   const _SummaryRow(this.label, this.value, {this.isDiscount = false});
 
@@ -419,8 +525,7 @@ class _SummaryRow extends StatelessWidget {
 class _ActionBtn extends StatelessWidget {
   final String label;
   final IconData icon;
-  final Color bg;
-  final Color fg;
+  final Color bg, fg;
   final VoidCallback onTap;
   const _ActionBtn({
     required this.label,

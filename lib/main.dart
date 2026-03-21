@@ -30,7 +30,9 @@ class MainApp extends StatelessWidget {
           fontFamily: "Inter",
           scaffoldBackgroundColor: Color(0xFFF8FAFC),
         ),
-        home: (authToken == "") ? AuthenticationScreen() : KitchenScreen(),
+        home: (authToken == "")
+            ? AuthenticationScreen()
+            : BillerdashBoardScreen(),
       ),
     );
   }

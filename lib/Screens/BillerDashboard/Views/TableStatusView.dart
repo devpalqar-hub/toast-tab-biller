@@ -95,19 +95,24 @@ class TableStatusView extends StatelessWidget {
                           )
                         : null;
 
-                    return _CompactTableRow(
-                      tableName: table.name ?? '—',
-                      tableStatus: table.status ?? '',
-                      statusColor: style.color,
-                      statusBg: style.bg,
-                      sessionCount: sessionCount,
-                      guestCount: activeSession?.guestCount,
-                      isSelected: isSelected,
-                      onTap: () {
-                        controller.biller.selectTable(table, tableSessions);
-                        controller.update();
-                      },
-                    );
+                    return (!table.isActive)
+                        ? Container()
+                        : _CompactTableRow(
+                            tableName: table.name ?? '—',
+                            tableStatus: table.status ?? '',
+                            statusColor: style.color,
+                            statusBg: style.bg,
+                            sessionCount: sessionCount,
+                            guestCount: activeSession?.guestCount,
+                            isSelected: isSelected,
+                            onTap: () {
+                              controller.biller.selectTable(
+                                table,
+                                tableSessions,
+                              );
+                              controller.update();
+                            },
+                          );
                   },
                 ),
               ),

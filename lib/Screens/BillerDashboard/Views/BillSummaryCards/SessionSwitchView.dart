@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get_instance/get_instance.dart';
+import 'package:get/state_manager.dart';
 import 'package:get/utils.dart';
+import 'package:toasttab/Screens/BillerDashboard/Service/BillerController.dart';
 import 'package:toasttab/Screens/BillerDashboard/Service/DashBoardContoller.dart';
 
 class SessionSwitchView extends StatelessWidget {
@@ -11,24 +13,18 @@ class SessionSwitchView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Builder(
+    return GetBuilder<BillerController>(
       builder: (context) {
-        // 1. Filter sessions for the selected table
         final filteredSessions = controller.sessions
             .where((it) => it.tableId == controller.biller.selectedTable!.id)
             .toList();
-
-        // Hide widget if no sessions exist (nothing to switch between)
         if (filteredSessions.isEmpty) return const SizedBox.shrink();
 
-        // 2. "New Bill" = selectedSessionId is null or empty
         final bool isNewBill =
             controller.biller.selectedSessionId == null ||
             controller.biller.selectedSessionId!.isEmpty;
 
-        // 3. Virtual index: sessions occupy 0..n-1, "New Bill" is at index n
-        //    So total slots = filteredSessions.length + 1
-        final int newBillIndex = filteredSessions.length; // virtual last slot
+        final int newBillIndex = filteredSessions.length;
 
         int currentIndex = isNewBill
             ? newBillIndex
@@ -36,7 +32,6 @@ class SessionSwitchView extends StatelessWidget {
                 (s) => s.id == controller.biller.selectedSessionId,
               );
 
-        // Safety: if session not found, fall back to first session
         if (!isNewBill && currentIndex == -1) currentIndex = 0;
 
         final bool canGoLeft = currentIndex > 0;
@@ -64,6 +59,8 @@ class SessionSwitchView extends StatelessWidget {
                 onPressed: canGoLeft
                     ? () {
                         final prevIndex = currentIndex - 1;
+                        controller.biller.newBatchItems = [];
+                        controller.update();
                         if (prevIndex == newBillIndex) {
                           // Navigating to "New Bill" slot — shouldn't happen
                           // since newBillIndex is always the rightmost
@@ -107,6 +104,8 @@ class SessionSwitchView extends StatelessWidget {
                 onPressed: canGoRight
                     ? () {
                         final nextIndex = currentIndex + 1;
+                        controller.biller.newBatchItems = [];
+                        controller.update();
                         if (nextIndex == newBillIndex) {
                           // Navigate to "New Bill" slot
                           controller.biller.selectedSession = null;

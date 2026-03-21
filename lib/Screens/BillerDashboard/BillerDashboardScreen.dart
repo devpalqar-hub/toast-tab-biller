@@ -5,6 +5,7 @@ import 'package:get/get_state_manager/src/simple/get_state.dart';
 import 'package:get/instance_manager.dart';
 import 'package:toasttab/Screens/BillerDashboard/Service/BillerController.dart';
 import 'package:toasttab/Screens/BillerDashboard/Service/DashBoardContoller.dart';
+import 'package:toasttab/Screens/BillerDashboard/Service/RoomController.dart';
 import 'package:toasttab/Screens/BillerDashboard/Views/AppHeader.dart';
 import 'package:toasttab/Screens/BillerDashboard/Views/BillSummaryView.dart';
 import 'package:toasttab/Screens/BillerDashboard/Views/MenuListingView.dart';
@@ -13,6 +14,8 @@ import 'package:toasttab/Screens/BillerDashboard/Views/TableStatusView.dart';
 class BillerdashBoardScreen extends StatelessWidget {
   BillerdashBoardScreen({super.key});
   DashboardController biller = Get.put(DashboardController());
+  RoomController roomController = Get.put(RoomController());
+
 
   @override
   Widget build(BuildContext context) {

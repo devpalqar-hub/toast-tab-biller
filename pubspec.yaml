@@ -17,6 +17,7 @@ dependencies:
   pinput: ^6.0.2
   socket_io_client: ^3.1.4
   animate_do: ^4.2.0
+  flutter_thermal_printer: ^2.0.1
 
 dev_dependencies:
   flutter_test:

@@ -1,3 +1,4 @@
+import 'package:animate_do/animate_do.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
@@ -87,51 +88,55 @@ class MenuListingView extends StatelessWidget {
                           crossAxisCount: 5,
                           crossAxisSpacing: 6.w,
                           mainAxisSpacing: 6.h,
-                          childAspectRatio: 16 / 12,
+                          childAspectRatio: 16 / 14,
                         ),
                         itemCount: visibleMenus.length,
                         itemBuilder: (_, i) {
                           final m = visibleMenus[i];
-                          return _MenuCard(
-                            imageUrl: m.imageUrl ?? "",
-                            title: m.name ?? "",
-                            price:
-                                double.tryParse(m.effectivePrice.toString()) ??
-                                0,
-                            originalPrice:
-                                double.tryParse(m.price.toString()) ?? 0,
-                            onTap: () => controller.biller.addToBatch(m),
-                            onToggleStock: () {
-                              if (!(m.isOutOfStock ?? false)) {
-                                m.isOutOfStock = !m.isOutOfStock!;
-                                controller.changeMenuStatus(m);
-                              } else {
-                                if (m.itemType == "STOCKABLE") {
-                                  Get.dialog(
-                                    RestockDialog(
-                                      itemName: m.name ?? "",
-                                      currentStock: 0,
-                                      onConfirm: (c) {
-                                        m.isOutOfStock = !m.isOutOfStock!;
-                                        controller.changeMenuStatus(
-                                          m,
-                                          stockStatus: true,
-                                          count: c,
-                                        );
-                                      },
-                                    ),
-                                  );
-                                } else {
+                          return FadeInUp(
+                            child: _MenuCard(
+                              imageUrl: m.imageUrl ?? "",
+                              title: m.name ?? "",
+                              price:
+                                  double.tryParse(
+                                    m.effectivePrice.toString(),
+                                  ) ??
+                                  0,
+                              originalPrice:
+                                  double.tryParse(m.price.toString()) ?? 0,
+                              onTap: () => controller.biller.addToBatch(m),
+                              onToggleStock: () {
+                                if (!(m.isOutOfStock ?? false)) {
                                   m.isOutOfStock = !m.isOutOfStock!;
-                                  controller.changeMenuStatus(
-                                    m,
-                                    stockStatus: true,
-                                  );
+                                  controller.changeMenuStatus(m);
+                                } else {
+                                  if (m.itemType == "STOCKABLE") {
+                                    Get.dialog(
+                                      RestockDialog(
+                                        itemName: m.name ?? "",
+                                        currentStock: 0,
+                                        onConfirm: (c) {
+                                          m.isOutOfStock = !m.isOutOfStock!;
+                                          controller.changeMenuStatus(
+                                            m,
+                                            stockStatus: true,
+                                            count: c,
+                                          );
+                                        },
+                                      ),
+                                    );
+                                  } else {
+                                    m.isOutOfStock = !m.isOutOfStock!;
+                                    controller.changeMenuStatus(
+                                      m,
+                                      stockStatus: true,
+                                    );
+                                  }
                                 }
-                              }
-                              controller.update();
-                            },
-                            inStock: !m.isOutOfStock!,
+                                controller.update();
+                              },
+                              inStock: !m.isOutOfStock!,
+                            ),
                           );
                         },
                       ),
@@ -231,7 +236,7 @@ class _MenuCard extends StatelessWidget {
                         child: Text(
                           "-${(((originalPrice - price) / originalPrice) * 100).round()}%",
                           style: TextStyle(
-                            fontSize: 7.sp,
+                            fontSize: 10.sp,
                             fontWeight: FontWeight.w700,
                             color: Colors.white,
                           ),
@@ -299,12 +304,13 @@ class _MenuCard extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
+                    SizedBox(height: 1),
                     Text(
                       title,
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
                       style: TextStyle(
-                        fontSize: 8.sp,
+                        fontSize: 11.sp,
                         fontWeight: FontWeight.w600,
                         color: inStock
                             ? const Color(0xFF0F172A)

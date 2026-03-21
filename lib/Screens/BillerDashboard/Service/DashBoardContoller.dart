@@ -183,7 +183,6 @@ class DashboardController extends GetxController {
           "quantity": (stockStatus == false) ? 0 : count,
       }),
     );
-    log(response.body);
 
     if (response.statusCode == 200) {
       update();

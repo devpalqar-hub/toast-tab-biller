@@ -105,7 +105,7 @@ class AuthController extends GetxController {
       restaurantId = resID;
 
       //showToast("Login Successful");
-      Get.offAll(() => KitchenScreen());
+      Get.offAll(() => BillerdashBoardScreen());
 
       log("Saved Restaurant ID: $restaurantId");
       log("Saved Restaurant Name: $restaurantName");

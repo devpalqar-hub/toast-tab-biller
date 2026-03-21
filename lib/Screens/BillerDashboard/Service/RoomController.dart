@@ -1,26 +1,39 @@
 import 'dart:io';
 
+import 'package:get/get.dart';
 import 'package:get/get_state_manager/get_state_manager.dart';
 import 'package:socket_io_client/socket_io_client.dart';
 import 'package:toasttab/Screens/BillerDashboard/Models/Request/MenuItemRequest.dart';
 import 'package:toasttab/Screens/BillerDashboard/Models/Request/SessionRequest.dart';
+import 'package:toasttab/Screens/BillerDashboard/Models/Response/MenuModel.dart';
+import 'package:toasttab/Screens/BillerDashboard/Service/DashBoardContoller.dart';
 import 'package:toasttab/main.dart';
 
 class RoomController extends GetxController {
-  String restaurantID = "";
   Socket socket = io(
-    "https://your-api-domain.com",
-    OptionBuilder().setTransports(['websocket']).disableAutoConnect().setAuth({
-      'token': authToken,
-    }).build(),
+    'https://api.pos.palqar.cloud/orders',
+    OptionBuilder()
+        .setTransports(['websocket'])
+        .setExtraHeaders({'authorization': 'Bearer $authToken'})
+        .setAuth({'token': 'Bearer $authToken'})
+        .disableAutoConnect()
+        .build(),
   );
 
   void connect(String token) {
     socket = socket.connect();
 
-    socket.onConnect((_) {});
+    socket.emit('join:restaurant', {'restaurantId': restaurantId});
+    //socket.emit('join:kitchen', {'restaurantId': restaurantId});
+    socket.emit('join:billing', {'restaurantId': restaurantId});
 
-    socket.onDisconnect((_) {});
+    socket.onConnect((_) {
+      print("connected");
+    });
+
+    socket.onDisconnect((__) {
+      print(__);
+    });
 
     socket.on('batch:created', (data) {});
 
@@ -31,26 +44,23 @@ class RoomController extends GetxController {
     socket.on('bill:paid', (data) {});
 
     socket.on('item:status:changed', (data) {});
-  }
 
-  joinRoom() {
-    socket.emit("join:billing", {"restaurantId": "${restaurantID}"});
-  }
+    socket.on('menuItem:stock:changed', (data) {
+      print(data);
+      DashboardController ctrl = Get.put(DashboardController());
 
-  void createNewSession(String tableID, int guestCount) {
-    socket.emit("session:create", {
-      "restaurantId": restaurantID,
-      "tableId": tableID,
-      "channel": "DINE_IN",
-      "guestCount": guestCount,
-    });
-  }
-
-  void createBatch(String sessionID, List<MenuItemRequest> menuList) {
-    socket.emit("batch:create", {
-      "restaurantId": restaurantID,
-      "sessionId": sessionID,
-      "items": [menuList.map((it) => it.toJson()).toList()],
+      for (var menu in ctrl.menus) {
+        print(menu.id);
+        print(data["menuItemId"]);
+        if (menu.id == data["menuItemId"]) {
+          menu.stockCount = data["stockCount"];
+          menu.itemType = data["itemType"];
+          menu.isOutOfStock = data["isOutOfStock"];
+          update();
+          ctrl.update();
+          break;
+        }
+      }
     });
   }
 
@@ -58,5 +68,7 @@ class RoomController extends GetxController {
   void onInit() {
     // TODO: implement onInit
     super.onInit();
+
+    connect(authToken);
   }
 }

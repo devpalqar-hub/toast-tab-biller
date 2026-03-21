@@ -53,7 +53,6 @@ class BillerController extends GetxController {
         "Authorization": "Bearer $authToken",
       },
     );
-    print(response.body);
     billSummary = null;
     update();
     if (response.statusCode == 200) {
@@ -149,10 +148,11 @@ class BillerController extends GetxController {
     phoneController.text = "";
     if (sessions.isNotEmpty) {
       selectedSession = sessions.first;
-      selectedSessionId = selectedSessionId;
-
+      selectedSessionId = selectedSession!.id;
+      update();
       fetchSessionDetail(sessions.first.id!);
     }
+    dbCtrl.update();
     update();
   }
 
@@ -213,9 +213,7 @@ class BillerController extends GetxController {
       dashController.fetchTables();
       startBatch();
       dashController.update();
-    } else {
-      print(response.body);
-    }
+    } else {}
   }
 
   startBatch() async {

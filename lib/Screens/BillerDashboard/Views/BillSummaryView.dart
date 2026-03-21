@@ -1,3 +1,5 @@
+import 'dart:developer';
+
 import 'package:animate_do/animate_do.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
@@ -121,31 +123,36 @@ class BillSummaryView extends StatelessWidget {
                 ),
 
                 // ── Send to Kitchen ─────────────────────────────
-                Padding(
-                  padding: EdgeInsets.symmetric(
-                    horizontal: 12.w,
-                    vertical: 8.h,
+                if (controller.biller.newBatchItems.isNotEmpty)
+                  Padding(
+                    padding: EdgeInsets.symmetric(
+                      horizontal: 12.w,
+                      vertical: 8.h,
+                    ),
+                    child: _KitchenBtn(
+                      onTap: () {
+                        if (controller.biller.newBatchItems.isNotEmpty) {
+                          if (controller.biller.selectedSessionId == null ||
+                              controller.biller.selectedSessionId == "") {
+                            controller.biller.startSession(
+                              tableID: controller.biller.selectedTable!.id!,
+                              guestCount:
+                                  controller.biller.selectedTable!.seatCount,
+                            );
+                          } else {
+                            controller.biller.startBatch();
+                          }
+                        }
+                      },
+                    ),
                   ),
-                  child: _KitchenBtn(
-                    onTap: () {
-                      if (controller.biller.selectedSession == null) {
-                        controller.biller.startSession(
-                          tableID: controller.biller.selectedTable!.id!,
-                          guestCount:
-                              controller.biller.selectedTable!.seatCount,
-                        );
-                      } else {
-                        controller.biller.startBatch();
-                      }
-                    },
-                  ),
-                ),
 
-                Divider(
-                  height: 1,
-                  thickness: 1,
-                  color: const Color(0xFFE2E8F0),
-                ),
+                if (controller.biller.newBatchItems.isNotEmpty)
+                  Divider(
+                    height: 1,
+                    thickness: 1,
+                    color: const Color(0xFFE2E8F0),
+                  ),
 
                 // ── Scrollable middle area ──────────────────────
                 // Uses LayoutBuilder to measure available space between
@@ -160,78 +167,83 @@ class BillSummaryView extends StatelessWidget {
                           ? Column(
                               children: [
                                 // New order — capped at 3/4 of available height
-                                ConstrainedBox(
-                                  constraints: BoxConstraints(
-                                    maxHeight: totalH * 0.75,
-                                  ),
-                                  child: Column(
-                                    mainAxisSize: MainAxisSize.min,
-                                    crossAxisAlignment:
-                                        CrossAxisAlignment.start,
-                                    children: [
-                                      Padding(
-                                        padding: EdgeInsets.fromLTRB(
-                                          12.w,
-                                          8.h,
-                                          12.w,
-                                          4.h,
-                                        ),
-                                        child: _SectionLabel(
-                                          label: "New order",
-                                          count: controller
-                                              .biller
-                                              .newBatchItems
-                                              .length,
-                                          color: const Color(0xFFF2994A),
-                                        ),
-                                      ),
-                                      Flexible(
-                                        child: ListView(
-                                          padding: EdgeInsets.symmetric(
-                                            horizontal: 8.w,
+                                if (controller
+                                    .biller
+                                    .newBatchItems
+                                    .isNotEmpty) ...[
+                                  ConstrainedBox(
+                                    constraints: BoxConstraints(
+                                      maxHeight: totalH * 0.75,
+                                    ),
+                                    child: Column(
+                                      mainAxisSize: MainAxisSize.min,
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
+                                      children: [
+                                        Padding(
+                                          padding: EdgeInsets.fromLTRB(
+                                            12.w,
+                                            8.h,
+                                            12.w,
+                                            4.h,
                                           ),
-                                          shrinkWrap: true,
-                                          children: controller
-                                              .biller
-                                              .newBatchItems
-                                              .map((item) {
-                                                final MenuModel menu =
-                                                    controller
-                                                        .batchItemtoMenuItem(
-                                                          item,
-                                                        );
-                                                final double linePrice =
-                                                    (double.tryParse(
-                                                          menu.effectivePrice ??
-                                                              "0",
-                                                        ) ??
-                                                        0) *
-                                                    (item.quantity ?? 1);
-                                                return _ItemRow(
-                                                  qty: item.quantity ?? 1,
-                                                  title: menu.name ?? "",
-                                                  price: linePrice,
-                                                  isPending: true,
-                                                  onAdd: () => controller.biller
-                                                      .addToBatch(menu),
-                                                  onRemove: () => controller
-                                                      .biller
-                                                      .removeFromBatch(menu),
-                                                );
-                                              })
-                                              .toList(),
+                                          child: _SectionLabel(
+                                            label: "New order",
+                                            count: controller
+                                                .biller
+                                                .newBatchItems
+                                                .length,
+                                            color: const Color(0xFFF2994A),
+                                          ),
                                         ),
-                                      ),
-                                    ],
+                                        Flexible(
+                                          child: ListView(
+                                            padding: EdgeInsets.symmetric(
+                                              horizontal: 8.w,
+                                            ),
+                                            shrinkWrap: true,
+                                            children: controller
+                                                .biller
+                                                .newBatchItems
+                                                .map((item) {
+                                                  final MenuModel menu =
+                                                      controller
+                                                          .batchItemtoMenuItem(
+                                                            item,
+                                                          );
+                                                  final double linePrice =
+                                                      (double.tryParse(
+                                                            menu.effectivePrice ??
+                                                                "0",
+                                                          ) ??
+                                                          0) *
+                                                      (item.quantity ?? 1);
+                                                  return _ItemRow(
+                                                    qty: item.quantity ?? 1,
+                                                    title: menu.name ?? "",
+                                                    price: linePrice,
+                                                    isPending: true,
+                                                    onAdd: () => controller
+                                                        .biller
+                                                        .addToBatch(menu),
+                                                    onRemove: () => controller
+                                                        .biller
+                                                        .removeFromBatch(menu),
+                                                  );
+                                                })
+                                                .toList(),
+                                          ),
+                                        ),
+                                      ],
+                                    ),
                                   ),
-                                ),
 
-                                Divider(
-                                  height: 1,
-                                  thickness: 1,
-                                  color: const Color(0xFFE2E8F0),
-                                ),
-
+                                  Divider(
+                                    height: 1,
+                                    thickness: 1,
+                                    color: const Color(0xFFE2E8F0),
+                                  ),
+                                ],
                                 // Ordered items — takes remaining space
                                 Expanded(
                                   child: Column(
