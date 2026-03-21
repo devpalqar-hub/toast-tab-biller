@@ -6,24 +6,20 @@ import 'package:fluttertoast/fluttertoast.dart';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:toasttab/Screens/BillerDashboard/BillerDashboardScreen.dart';
+import 'package:toasttab/Screens/BillerDashboard/Service/DashBoardContoller.dart';
+import 'package:toasttab/Screens/Kitchen/KitchenScreen.dart';
 import 'package:toasttab/main.dart';
 
 class AuthController extends GetxController {
-  final emailController = TextEditingController();
-  final otpController = TextEditingController();
+  final emailController = TextEditingController(
+    text: "sabarinathp.dev@gmail.com",
+  );
+  final otpController = TextEditingController(text: "759409");
 
   bool isLoading = false;
   bool isOtpSent = false;
 
-  void showToast(String message, {bool isError = false}) {
-    // Fluttertoast.showToast(
-    //   msg: message,
-    //   toastLength: Toast.LENGTH_SHORT,
-    //   gravity: ToastGravity.BOTTOM,
-    //   backgroundColor: isError ? Colors.red : Colors.green,
-    //   textColor: Colors.white,
-    // );
-  }
+  void showToast(String message, {bool isError = false}) {}
 
   Future<void> sendOtp() async {
     if (emailController.text.isEmpty) {
@@ -109,7 +105,7 @@ class AuthController extends GetxController {
       restaurantId = resID;
 
       //showToast("Login Successful");
-      Get.offAll(() => const BillerdashBoardScreen());
+      Get.offAll(() => KitchenScreen());
 
       log("Saved Restaurant ID: $restaurantId");
       log("Saved Restaurant Name: $restaurantName");
