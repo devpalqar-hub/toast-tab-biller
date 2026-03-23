@@ -12,10 +12,17 @@ String restaurantId = "";
 String role = "";
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  SharedPreferences pref = await SharedPreferences.getInstance();
-  authToken = pref.getString("accessToken") ?? "";
-  role = pref.getString("role") ?? "";
-  restaurantId = pref.getString("restaurantId") ?? "";
+  try {
+    final pref = await SharedPreferences.getInstance();
+    authToken = pref.getString("accessToken") ?? "";
+    role = pref.getString("role") ?? "";
+    restaurantId = pref.getString("restaurantId") ?? "";
+  } catch (e) {
+    authToken = "";
+    role = "";
+    restaurantId = "";
+    debugPrint("SharedPreferences init failed: $e");
+  }
   runApp(const MainApp());
 }
 
