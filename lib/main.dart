@@ -9,10 +9,12 @@ import 'package:toasttab/Screens/Kitchen/KitchenScreen.dart';
 final String baseUrl = "https://api.pos.palqar.cloud/api/v1";
 String authToken = "";
 String restaurantId = "";
+String role = "";
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   SharedPreferences pref = await SharedPreferences.getInstance();
-  // authToken = pref.getString("accessToken") ?? "";
+  authToken = pref.getString("accessToken") ?? "";
+  role = pref.getString("role") ?? "";
   restaurantId = pref.getString("restaurantId") ?? "";
   runApp(const MainApp());
 }
@@ -32,6 +34,8 @@ class MainApp extends StatelessWidget {
         ),
         home: (authToken == "")
             ? AuthenticationScreen()
+            : (role == "CHEF")
+            ? KitchenScreen()
             : BillerdashBoardScreen(),
       ),
     );

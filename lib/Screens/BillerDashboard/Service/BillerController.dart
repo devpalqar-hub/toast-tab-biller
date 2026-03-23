@@ -188,7 +188,6 @@ class BillerController extends GetxController {
   }
 
   startSession({required String tableID, int? guestCount}) async {
-    print("hit here");
     final response = await post(
       Uri.parse(baseUrl + "/orders/restaurants/${restaurantId}/sessions"),
 

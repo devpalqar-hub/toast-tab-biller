@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
+import 'package:toasttab/Screens/BillerDashboard/Views/AppHeader.dart';
 import 'package:toasttab/Screens/Kitchen/Service/KitchenController.dart';
 import 'Views/KanbanColumn.dart';
 
@@ -158,6 +159,8 @@ class _TopBar extends StatelessWidget {
               ],
             ),
           ),
+          SizedBox(width: 20),
+          LogoutButton(),
         ],
       ),
     );

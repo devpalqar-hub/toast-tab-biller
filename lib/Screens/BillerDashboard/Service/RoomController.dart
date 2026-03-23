@@ -28,30 +28,31 @@ class RoomController extends GetxController {
     socket.emit('join:billing', {'restaurantId': restaurantId});
 
     socket.onConnect((_) {
-      print("connected");
     });
 
     socket.onDisconnect((__) {
-      print(__);
     });
 
     socket.on('batch:created', (data) {});
 
-    socket.on('session:opened', (data) {});
+    socket.on('session:opened', (data) {
+      DashboardController ctrl = Get.put(DashboardController());
+      ctrl.fetchAllPendingSession();
+    });
 
-    socket.on('bill:generated', (data) {});
+    socket.on('bill:generated', (data) {
+      DashboardController ctrl = Get.put(DashboardController());
+      ctrl.fetchAllPendingSession();
+    });
 
     socket.on('bill:paid', (data) {});
 
     socket.on('item:status:changed', (data) {});
 
     socket.on('menuItem:stock:changed', (data) {
-      print(data);
       DashboardController ctrl = Get.put(DashboardController());
 
       for (var menu in ctrl.menus) {
-        print(menu.id);
-        print(data["menuItemId"]);
         if (menu.id == data["menuItemId"]) {
           menu.stockCount = data["stockCount"];
           menu.itemType = data["itemType"];

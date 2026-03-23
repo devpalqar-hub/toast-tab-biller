@@ -73,7 +73,6 @@ class KitchenController extends GetxController {
 
     // ── batch:created → add batch to its session (create session if new) ─────
     _socket.on('batch:created', (raw) {
-      print(raw);
       final data = raw is String ? json.decode(raw) : raw;
       final batch = KitchenBatch.fromJson(data);
 
@@ -118,7 +117,6 @@ class KitchenController extends GetxController {
 
     // ── bill:paid / session:status:changed → mark session billed → remove ────
     _socket.on('bill:generated', (raw) {
-      print("bill generated");
       final data = raw is String ? json.decode(raw) : raw;
       final sid = data['sessionId'] as String?;
       if (sid != null && _sessionMap.containsKey(sid)) {

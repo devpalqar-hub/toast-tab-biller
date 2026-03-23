@@ -64,6 +64,17 @@ class SessionSwitchView extends StatelessWidget {
                         if (prevIndex == newBillIndex) {
                           // Navigating to "New Bill" slot — shouldn't happen
                           // since newBillIndex is always the rightmost
+                          controller.biller.selectedSession = null;
+                          controller.biller.selectedSessionId = null;
+                          controller.biller.totalAmount = "";
+                          controller.biller.taxAmount = "";
+                          controller.biller.subTotalAmount = "";
+                          controller.biller.billSummary = null;
+                          controller.biller.nameController.text = "";
+                          controller.biller.emailController.text = "";
+                          controller.biller.emailController.text = "";
+                          controller.biller.update();
+                          controller.update();
                         } else {
                           final session = filteredSessions[prevIndex];
                           controller.biller.selectedSession = session;
@@ -110,8 +121,16 @@ class SessionSwitchView extends StatelessWidget {
                           // Navigate to "New Bill" slot
                           controller.biller.selectedSession = null;
                           controller.biller.selectedSessionId = null;
+                          controller.biller.totalAmount = " 0";
+                          controller.biller.taxAmount = " 0";
+                          controller.biller.subTotalAmount = " 0";
                           controller.biller.billSummary = null;
+                          controller.biller.nameController.text = "";
+                          controller.biller.emailController.text = "";
+                          controller.biller.emailController.text = "";
                           controller.biller.update();
+                          controller.biller.update();
+                          controller.update();
                         } else {
                           final session = filteredSessions[nextIndex];
                           controller.biller.selectedSession = session;

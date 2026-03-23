@@ -95,17 +95,24 @@ class AuthController extends GetxController {
       final resID = data["data"]["user"]["restaurant"]["id"];
       final restaurantName = data["data"]["user"]["restaurant"]["name"];
       final accessToken = data["data"]["accessToken"];
+      final role = data["data"]["user"]["role"];
 
       final prefs = await SharedPreferences.getInstance();
 
       await prefs.setString("restaurantId", resID);
       await prefs.setString("restaurantName", restaurantName);
       await prefs.setString("accessToken", accessToken);
+      await prefs.setString("role", role);
       authToken = accessToken;
       restaurantId = resID;
 
       //showToast("Login Successful");
-      Get.offAll(() => BillerdashBoardScreen());
+
+      if (role == "CHEF") {
+        Get.offAll(() => KitchenScreen());
+      } else {
+        Get.offAll(() => BillerdashBoardScreen());
+      }
 
       log("Saved Restaurant ID: $restaurantId");
       log("Saved Restaurant Name: $restaurantName");

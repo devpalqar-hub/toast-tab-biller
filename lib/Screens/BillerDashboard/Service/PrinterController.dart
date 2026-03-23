@@ -474,23 +474,5 @@ class PrinterController extends GetxController {
   }
 
   // ── Snackbar ──────────────────────────────────────────────────────────────
-  void _snack(String msg, {bool isError = false}) {
-    Get.snackbar(
-      isError ? "Printer Error" : "Printer",
-      msg,
-      backgroundColor: isError
-          ? const Color(0xFFEF4444)
-          : const Color(0xFF10B981),
-      colorText: Colors.white,
-      snackPosition: SnackPosition.BOTTOM,
-      margin: const EdgeInsets.all(12),
-      borderRadius: 8,
-      duration: const Duration(seconds: 3),
-      icon: Icon(
-        isError ? Icons.print_disabled_outlined : Icons.check_circle_outline,
-        color: Colors.white,
-        size: 18,
-      ),
-    );
-  }
+  void _snack(String msg, {bool isError = false}) {}
 }

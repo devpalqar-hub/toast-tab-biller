@@ -82,8 +82,16 @@ class BillSummaryView extends StatelessWidget {
                         onTap: () {
                           controller.biller.selectedSession = null;
                           controller.biller.selectedSessionId = null;
+                          controller.biller.totalAmount = " 0";
+                          controller.biller.taxAmount = " 0";
+                          controller.biller.subTotalAmount = " 0";
                           controller.biller.billSummary = null;
+                          controller.biller.nameController.text = "";
+                          controller.biller.emailController.text = "";
+                          controller.biller.emailController.text = "";
                           controller.biller.update();
+                          controller.biller.update();
+                          controller.update();
                         },
                         child: Container(
                           padding: EdgeInsets.symmetric(

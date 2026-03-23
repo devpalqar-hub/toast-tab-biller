@@ -152,10 +152,8 @@ class DashboardController extends GetxController {
       },
     );
 
-    print(response.body);
     if (response.statusCode == 200 || response.statusCode == 201) {
       List<CustomerModel> customers = [];
-      print(customers);
       for (var cs in json.decode(response.body)["data"]["data"]) {
         customers.add(CustomerModel.fromJson(cs));
       }
