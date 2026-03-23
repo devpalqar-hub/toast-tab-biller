@@ -1,0 +1,150 @@
+import 'package:flutter/material.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:get/get_instance/get_instance.dart';
+import 'package:get/state_manager.dart';
+import 'package:get/utils.dart';
+import 'package:toasttab/Screens/BillerDashboard/Service/BillerController.dart';
+import 'package:toasttab/Screens/BillerDashboard/Service/DashBoardContoller.dart';
+
+class SessionSwitchView extends StatelessWidget {
+  SessionSwitchView({super.key});
+
+  DashboardController controller = Get.find();
+
+  @override
+  Widget build(BuildContext context) {
+    return GetBuilder<BillerController>(
+      builder: (context) {
+        final filteredSessions = controller.sessions
+            .where((it) => it.tableId == controller.biller.selectedTable!.id)
+            .toList();
+        if (filteredSessions.isEmpty) return const SizedBox.shrink();
+
+        final bool isNewBill =
+            controller.biller.selectedSessionId == null ||
+            controller.biller.selectedSessionId!.isEmpty;
+
+        final int newBillIndex = filteredSessions.length;
+
+        int currentIndex = isNewBill
+            ? newBillIndex
+            : filteredSessions.indexWhere(
+                (s) => s.id == controller.biller.selectedSessionId,
+              );
+
+        if (!isNewBill && currentIndex == -1) currentIndex = 0;
+
+        final bool canGoLeft = currentIndex > 0;
+        final bool canGoRight = currentIndex < newBillIndex;
+
+        return Container(
+          padding: EdgeInsets.symmetric(horizontal: 4.w, vertical: 2.h),
+          decoration: BoxDecoration(
+            color: const Color(0xFFF0F7FF),
+            borderRadius: BorderRadius.circular(20.r),
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              // ◀ LEFT ARROW
+              IconButton(
+                visualDensity: VisualDensity.compact,
+                icon: Icon(
+                  Icons.chevron_left,
+                  color: canGoLeft
+                      ? const Color(0xFF2F80ED)
+                      : Colors.grey.shade400,
+                  size: 20.sp,
+                ),
+                onPressed: canGoLeft
+                    ? () {
+                        final prevIndex = currentIndex - 1;
+                        controller.biller.newBatchItems = [];
+                        controller.update();
+                        if (prevIndex == newBillIndex) {
+                          // Navigating to "New Bill" slot — shouldn't happen
+                          // since newBillIndex is always the rightmost
+                          controller.biller.selectedSession = null;
+                          controller.biller.selectedSessionId = null;
+                          controller.biller.totalAmount = "";
+                          controller.biller.taxAmount = "";
+                          controller.biller.subTotalAmount = "";
+                          controller.biller.billSummary = null;
+                          controller.biller.nameController.text = "";
+                          controller.biller.emailController.text = "";
+                          controller.biller.emailController.text = "";
+                          controller.biller.update();
+                          controller.update();
+                        } else {
+                          final session = filteredSessions[prevIndex];
+                          controller.biller.selectedSession = session;
+                          controller.biller.selectedSessionId = session.id!;
+                          controller.biller.fetchSessionDetail(session.id!);
+                          controller.biller.update();
+                        }
+                      }
+                    : null,
+              ),
+
+              // SESSION LABEL
+              Padding(
+                padding: EdgeInsets.symmetric(horizontal: 8.w),
+                child: Text(
+                  isNewBill
+                      ? "New Bill"
+                      : filteredSessions[currentIndex].sessionNumber ??
+                            "Session",
+                  style: TextStyle(
+                    fontSize: 13.sp,
+                    fontWeight: FontWeight.w700,
+                    color: const Color(0xFF2F80ED),
+                  ),
+                ),
+              ),
+
+              // ▶ RIGHT ARROW
+              IconButton(
+                visualDensity: VisualDensity.compact,
+                icon: Icon(
+                  Icons.chevron_right,
+                  color: canGoRight
+                      ? const Color(0xFF2F80ED)
+                      : Colors.grey.shade400,
+                  size: 20.sp,
+                ),
+                onPressed: canGoRight
+                    ? () {
+                        final nextIndex = currentIndex + 1;
+                        controller.biller.newBatchItems = [];
+                        controller.update();
+                        if (nextIndex == newBillIndex) {
+                          // Navigate to "New Bill" slot
+                          controller.biller.selectedSession = null;
+                          controller.biller.selectedSessionId = null;
+                          controller.biller.totalAmount = " 0";
+                          controller.biller.taxAmount = " 0";
+                          controller.biller.subTotalAmount = " 0";
+                          controller.biller.billSummary = null;
+                          controller.biller.nameController.text = "";
+                          controller.biller.emailController.text = "";
+                          controller.biller.emailController.text = "";
+                          controller.biller.update();
+                          controller.biller.update();
+                          controller.update();
+                        } else {
+                          final session = filteredSessions[nextIndex];
+                          controller.biller.selectedSession = session;
+                          controller.biller.selectedSessionId = session.id!;
+                          controller.biller.fetchSessionDetail(session.id!);
+                          controller.biller.update();
+                        }
+                      }
+                    : null,
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+}
