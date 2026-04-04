@@ -6,6 +6,7 @@ import 'package:socket_io_client/socket_io_client.dart';
 import 'package:toasttab/Screens/BillerDashboard/Models/Request/MenuItemRequest.dart';
 import 'package:toasttab/Screens/BillerDashboard/Models/Request/SessionRequest.dart';
 import 'package:toasttab/Screens/BillerDashboard/Models/Response/MenuModel.dart';
+import 'package:toasttab/Screens/BillerDashboard/Service/BillerController.dart';
 import 'package:toasttab/Screens/BillerDashboard/Service/DashBoardContoller.dart';
 import 'package:toasttab/main.dart';
 
@@ -27,15 +28,20 @@ class RoomController extends GetxController {
     //socket.emit('join:kitchen', {'restaurantId': restaurantId});
     socket.emit('join:billing', {'restaurantId': restaurantId});
 
-    socket.onConnect((_) {
-    });
+    socket.onConnect((_) {});
 
-    socket.onDisconnect((__) {
-    });
+    socket.onDisconnect((__) {});
 
-    socket.on('batch:created', (data) {});
+    socket.on('batch:created', (data) {
+      BillerController ctrl = Get.find();
+      if (ctrl.selectedSessionId == data["sessionId"]) {
+        ctrl.fetchSessionDetail(ctrl.selectedSessionId!!);
+        ctrl.update();
+      }
+    });
 
     socket.on('session:opened', (data) {
+      print(data);
       DashboardController ctrl = Get.put(DashboardController());
       ctrl.fetchAllPendingSession();
     });
@@ -47,7 +53,13 @@ class RoomController extends GetxController {
 
     socket.on('bill:paid', (data) {});
 
-    socket.on('item:status:changed', (data) {});
+    socket.on('item:status:changed', (data) {
+      BillerController ctrl = Get.find();
+      if (ctrl.selectedSessionId == data["sessionId"]) {
+        ctrl.fetchSessionDetail(ctrl.selectedSessionId!!);
+        ctrl.update();
+      }
+    });
 
     socket.on('menuItem:stock:changed', (data) {
       DashboardController ctrl = Get.put(DashboardController());

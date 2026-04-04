@@ -82,15 +82,15 @@ class AppHeader extends StatelessWidget {
                   SizedBox(width: 12.w),
 
                   // ── Divider ────────────────────────────────────────
-                  _VDivider(),
-                  SizedBox(width: 12.w),
+                  //_VDivider(),
+                  // SizedBox(width: 12.w),
 
-                  // ── Notification ───────────────────────────────────
-                  _IconBtn(
-                    icon: Icons.notifications_none_rounded,
-                    onTap: () {},
-                  ),
-                  SizedBox(width: 8.w),
+                  // // ── Notification ───────────────────────────────────
+                  // _IconBtn(
+                  //   icon: Icons.notifications_none_rounded,
+                  //   onTap: () {},
+                  // ),
+                  //  SizedBox(width: 8.w),
 
                   // ── Divider ────────────────────────────────────────
                   _VDivider(),
