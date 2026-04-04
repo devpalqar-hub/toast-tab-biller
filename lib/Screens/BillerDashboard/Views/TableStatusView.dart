@@ -102,7 +102,13 @@ class TableStatusView extends StatelessWidget {
                             tableStatus: table.status ?? '',
                             statusColor: style.color,
                             statusBg: style.bg,
-                            sessionCount: sessionCount,
+                            sessionCount: tableSessions
+                                .where(
+                                  (s) =>
+                                      s.status?.toLowerCase() == 'open' ||
+                                      s.status?.toLowerCase() == 'active',
+                                )
+                                .length,
                             guestCount: activeSession?.guestCount,
                             isSelected: isSelected,
                             onTap: () {

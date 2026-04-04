@@ -7,6 +7,7 @@ class BillSummaryModel {
   String? taxAmount;
   String? discountAmount;
   String? totalAmount;
+  String? loyalityPointDiscountAmount;
   String? notes;
   List<Items>? items;
   Session? session;
@@ -27,6 +28,7 @@ class BillSummaryModel {
     this.session,
     this.coupon,
     this.loyalty,
+    this.loyalityPointDiscountAmount,
   });
 
   BillSummaryModel.fromJson(Map<String, dynamic> json) {
@@ -38,6 +40,7 @@ class BillSummaryModel {
     taxAmount = json['taxAmount'];
     discountAmount = json['discountAmount'];
     totalAmount = json['totalAmount'];
+    loyalityPointDiscountAmount = json["loyalityPointDiscountAmount"];
     notes = json['notes'];
     if (json['items'] != null) {
       items = <Items>[];
@@ -84,28 +87,37 @@ class BillSummaryModel {
 }
 
 class Items {
+  String? id;
   String? menuItemId;
   String? name;
   int? quantity;
   String? unitPrice;
   String? totalPrice;
+  String? status;
+  String? batchId;
   MenuItem? menuItem;
 
   Items({
+    this.id,
     this.menuItemId,
     this.name,
     this.quantity,
     this.unitPrice,
     this.totalPrice,
     this.menuItem,
+    this.batchId,
+    this.status,
   });
 
   Items.fromJson(Map<String, dynamic> json) {
+    id = json["id"];
     menuItemId = json['menuItemId'];
     name = json['name'];
     quantity = json['quantity'];
     unitPrice = json['unitPrice'];
     totalPrice = json['totalPrice'];
+    status = json["status"];
+    batchId = json["batchId"];
     menuItem = json['menuItem'] != null
         ? new MenuItem.fromJson(json['menuItem'])
         : null;
@@ -118,6 +130,7 @@ class Items {
     data['quantity'] = this.quantity;
     data['unitPrice'] = this.unitPrice;
     data['totalPrice'] = this.totalPrice;
+    data["status"] = this.status;
     if (this.menuItem != null) {
       data['menuItem'] = this.menuItem!.toJson();
     }
@@ -228,7 +241,7 @@ class Loyalty {
   Loyalty.fromJson(Map<String, dynamic> json) {
     customerId = json['customerId'];
     customerName = json['customerName'];
-    totalPoints = json['totalPoints'];
+    totalPoints = json['totalPoints'].toString();
   }
 
   Map<String, dynamic> toJson() {

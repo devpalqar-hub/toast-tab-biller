@@ -9,6 +9,7 @@ import 'package:toasttab/Screens/BillerDashboard/Models/Response/TableModel.dart
 import 'package:toasttab/Screens/BillerDashboard/Service/DashBoardContoller.dart';
 import 'package:toasttab/Screens/BillerDashboard/Views/BillDialog.dart';
 import 'package:toasttab/Screens/BillerDashboard/Views/BillSummaryCards/SessionSwitchView.dart';
+import 'package:toasttab/Screens/BillerDashboard/Views/CancelDialog.dart';
 
 class BillSummaryView extends StatelessWidget {
   BillSummaryView({super.key});
@@ -34,14 +35,16 @@ class BillSummaryView extends StatelessWidget {
               children: [
                 // ── Header ─────────────────────────────────────
                 Container(
-                  padding: EdgeInsets.fromLTRB(12.w, 12.h, 12.w, 10.h),
+                  padding: EdgeInsets.fromLTRB(12.w, 10.h, 12.w, 10.h),
                   decoration: const BoxDecoration(
                     border: Border(
                       bottom: BorderSide(color: Color(0xFFE2E8F0), width: 1),
                     ),
                   ),
                   child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.center,
                     children: [
+                      // ── Table avatar ──────────────────────────────
                       Container(
                         width: 34.w,
                         height: 34.w,
@@ -60,6 +63,8 @@ class BillSummaryView extends StatelessWidget {
                         ),
                       ),
                       SizedBox(width: 9.w),
+
+                      // ── Table name + session switcher ─────────────
                       Expanded(
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
@@ -78,53 +83,123 @@ class BillSummaryView extends StatelessWidget {
                           ],
                         ),
                       ),
-                      GestureDetector(
-                        onTap: () {
-                          controller.biller.selectedSession = null;
-                          controller.biller.selectedSessionId = null;
-                          controller.biller.totalAmount = " 0";
-                          controller.biller.taxAmount = " 0";
-                          controller.biller.subTotalAmount = " 0";
-                          controller.biller.billSummary = null;
-                          controller.biller.nameController.text = "";
-                          controller.biller.emailController.text = "";
-                          controller.biller.emailController.text = "";
-                          controller.biller.update();
-                          controller.biller.update();
-                          controller.update();
-                        },
-                        child: Container(
-                          padding: EdgeInsets.symmetric(
-                            horizontal: 8.w,
-                            vertical: 5.h,
-                          ),
-                          decoration: BoxDecoration(
-                            color: const Color(0xFFF0F7FF),
-                            borderRadius: BorderRadius.circular(6.r),
-                            border: Border.all(
-                              color: const Color(0xFF2F80ED).withOpacity(0.25),
-                            ),
-                          ),
-                          child: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Icon(
-                                Icons.add,
-                                size: 12.sp,
-                                color: const Color(0xFF2F80ED),
+
+                      SizedBox(width: 6.w),
+
+                      // ── Action buttons stacked vertically ─────────
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.end,
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          // New bill button
+                          GestureDetector(
+                            onTap: () {
+                              controller.biller.selectedSession = null;
+                              controller.biller.selectedSessionId = null;
+                              controller.biller.totalAmount = "0";
+                              controller.biller.taxAmount = "0";
+                              controller.biller.subTotalAmount = "0";
+                              controller.biller.billSummary = null;
+                              controller.biller.nameController.clear();
+                              controller.biller.phoneController.clear();
+                              controller.biller.emailController.clear();
+                              controller.biller.update();
+                              controller.update();
+                            },
+                            child: Container(
+                              padding: EdgeInsets.symmetric(
+                                horizontal: 8.w,
+                                vertical: 4.h,
                               ),
-                              SizedBox(width: 3.w),
-                              Text(
-                                "New",
-                                style: TextStyle(
-                                  color: const Color(0xFF2F80ED),
-                                  fontSize: 11.sp,
-                                  fontWeight: FontWeight.w600,
+                              decoration: BoxDecoration(
+                                color: const Color(0xFFF0F7FF),
+                                borderRadius: BorderRadius.circular(5.r),
+                                border: Border.all(
+                                  color: const Color(
+                                    0xFF2F80ED,
+                                  ).withOpacity(0.25),
                                 ),
                               ),
-                            ],
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Icon(
+                                    Icons.add,
+                                    size: 11.sp,
+                                    color: const Color(0xFF2F80ED),
+                                  ),
+                                  SizedBox(width: 3.w),
+                                  Text(
+                                    "New",
+                                    style: TextStyle(
+                                      color: const Color(0xFF2F80ED),
+                                      fontSize: 10.sp,
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
                           ),
-                        ),
+
+                          // Cancel session button — only when session is active
+                          if (controller.biller.selectedSessionId != null &&
+                              controller
+                                  .biller
+                                  .selectedSessionId!
+                                  .isNotEmpty) ...[
+                            SizedBox(height: 4.h),
+                            GestureDetector(
+                              onTap: () => CancelSessionDialog.show(
+                                context,
+                                sessionNumber:
+                                    controller
+                                        .biller
+                                        .selectedSession
+                                        ?.sessionNumber ??
+                                    "",
+                                onConfirm: () =>
+                                    controller.biller.cancelSession(
+                                      controller.biller.selectedSessionId!,
+                                    ),
+                              ),
+                              child: Container(
+                                padding: EdgeInsets.symmetric(
+                                  horizontal: 8.w,
+                                  vertical: 4.h,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: const Color(0xFFFEF2F2),
+                                  borderRadius: BorderRadius.circular(5.r),
+                                  border: Border.all(
+                                    color: const Color(
+                                      0xFFEF4444,
+                                    ).withOpacity(0.25),
+                                  ),
+                                ),
+                                child: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Icon(
+                                      Icons.cancel_outlined,
+                                      size: 11.sp,
+                                      color: const Color(0xFFEF4444),
+                                    ),
+                                    SizedBox(width: 3.w),
+                                    Text(
+                                      "Cancel",
+                                      style: TextStyle(
+                                        color: const Color(0xFFEF4444),
+                                        fontSize: 10.sp,
+                                        fontWeight: FontWeight.w600,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                          ],
+                        ],
                       ),
                     ],
                   ),
@@ -150,7 +225,7 @@ class BillSummaryView extends StatelessWidget {
                           } else {
                             controller.biller.startBatch();
                           }
-                        }
+                        } else {}
                       },
                     ),
                   ),
@@ -231,6 +306,7 @@ class BillSummaryView extends StatelessWidget {
                                                     title: menu.name ?? "",
                                                     price: linePrice,
                                                     isPending: true,
+
                                                     onAdd: () => controller
                                                         .biller
                                                         .addToBatch(menu),
@@ -299,8 +375,34 @@ class BillSummaryView extends StatelessWidget {
                                                 return _ItemRow(
                                                   qty: item.quantity ?? 1,
                                                   title: menu.name ?? "",
-                                                  price: linePrice,
+                                                  price: double.parse(
+                                                    item.totalPrice ?? "0",
+                                                  ),
+                                                  status: item.status,
                                                   isPending: false,
+                                                  onCancelItem: () {
+                                                    CancelItemDialog.show(
+                                                      context,
+                                                      itemName: item.name ?? "",
+                                                      onConfirm: (reason) {
+                                                        controller.biller
+                                                            .cancelBatchItem(
+                                                              sessionId:
+                                                                  controller
+                                                                      .biller
+                                                                      .selectedSessionId ??
+                                                                  "",
+                                                              batchId:
+                                                                  item.batchId ??
+                                                                  "",
+                                                              itemId:
+                                                                  item.id ?? "",
+                                                              cancelReason:
+                                                                  reason,
+                                                            );
+                                                      },
+                                                    );
+                                                  },
                                                 );
                                               })
                                               .toList(),
@@ -550,18 +652,26 @@ class _ItemRow extends StatelessWidget {
   final String title;
   final double price;
   final bool isPending;
+  final String? status;
   final VoidCallback? onAdd;
   final VoidCallback? onRemove;
+  final VoidCallback? onCancelItem; // NEW
+
   const _ItemRow({
     required this.qty,
     required this.title,
     required this.price,
     required this.isPending,
+    this.status,
     this.onAdd,
     this.onRemove,
+    this.onCancelItem, // NEW
   });
+
   @override
   Widget build(BuildContext context) {
+    final bool isCancelled = status == 'CANCELLED';
+
     return Container(
       padding: EdgeInsets.symmetric(vertical: 5.h, horizontal: 4.w),
       decoration: BoxDecoration(
@@ -574,6 +684,7 @@ class _ItemRow extends StatelessWidget {
       ),
       child: Row(
         children: [
+          // Qty control / badge
           if (isPending)
             Container(
               decoration: BoxDecoration(
@@ -604,7 +715,9 @@ class _ItemRow extends StatelessWidget {
               width: 18.w,
               height: 18.w,
               decoration: BoxDecoration(
-                color: const Color(0xFF10B981).withOpacity(0.12),
+                color: isCancelled
+                    ? const Color(0xFFFEF2F2)
+                    : const Color(0xFF10B981).withOpacity(0.12),
                 borderRadius: BorderRadius.circular(4.r),
               ),
               alignment: Alignment.center,
@@ -613,11 +726,16 @@ class _ItemRow extends StatelessWidget {
                 style: TextStyle(
                   fontSize: 9.sp,
                   fontWeight: FontWeight.w700,
-                  color: const Color(0xFF10B981),
+                  color: isCancelled
+                      ? const Color(0xFFEF4444)
+                      : const Color(0xFF10B981),
                 ),
               ),
             ),
+
           SizedBox(width: 8.w),
+
+          // Title
           Expanded(
             child: Text(
               title,
@@ -626,19 +744,48 @@ class _ItemRow extends StatelessWidget {
               style: TextStyle(
                 fontSize: 11.sp,
                 fontWeight: FontWeight.w500,
-                color: const Color(0xFF0F172A),
+                color: isCancelled
+                    ? const Color(0xFFCBD5E1)
+                    : const Color(0xFF0F172A),
+                decoration: isCancelled ? TextDecoration.lineThrough : null,
               ),
             ),
           ),
-          SizedBox(width: 6.w),
+
+          SizedBox(width: 4.w),
+
+          // Price
           Text(
             "\$${price.toStringAsFixed(2)}",
             style: TextStyle(
               fontSize: 11.sp,
               fontWeight: FontWeight.w600,
-              color: const Color(0xFF0F172A),
+              color: isCancelled
+                  ? const Color(0xFFCBD5E1)
+                  : const Color(0xFF0F172A),
             ),
           ),
+
+          // Cancel button — only for PENDING ordered items
+          if (onCancelItem != null) ...[
+            SizedBox(width: 6.w),
+            GestureDetector(
+              onTap: onCancelItem,
+              child: Container(
+                width: 20.w,
+                height: 20.w,
+                decoration: BoxDecoration(
+                  color: const Color(0xFFFEF2F2),
+                  borderRadius: BorderRadius.circular(4.r),
+                ),
+                child: Icon(
+                  Icons.close,
+                  size: 11.sp,
+                  color: const Color(0xFFEF4444),
+                ),
+              ),
+            ),
+          ],
         ],
       ),
     );

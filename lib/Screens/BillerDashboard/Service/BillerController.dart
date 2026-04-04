@@ -151,6 +151,10 @@ class BillerController extends GetxController {
       selectedSessionId = selectedSession!.id;
       update();
       fetchSessionDetail(sessions.first.id!);
+    } else {
+      selectedSession = null;
+      selectedSessionId = null;
+      update();
     }
     dbCtrl.update();
     update();
@@ -212,10 +216,13 @@ class BillerController extends GetxController {
       dashController.fetchTables();
       startBatch();
       dashController.update();
-    } else {}
+    } else {
+      print(response.body);
+    }
   }
 
   startBatch() async {
+    DashboardController ctrl = Get.find();
     final response = await post(
       Uri.parse(
         baseUrl +
@@ -231,8 +238,79 @@ class BillerController extends GetxController {
     );
 
     if (response.statusCode == 201 || response.statusCode == 200) {
+      for (var menu in newBatchItems) {
+        var items = ctrl.menus.where((it) => it.id == menu.menuItemId);
+        if (items.isEmpty) {
+          break;
+        } else {
+          if (items.first.itemType == "STOCKABLE") {
+            items.first.stockCount = items.first.stockCount! - 1;
+            if (items.first.stockCount! < 1) {
+              items.first.isOutOfStock = true;
+              items.first.isAvailable = false;
+            }
+          }
+        }
+        update();
+        ctrl.update();
+      }
       newBatchItems = [];
       fetchSessionDetail(selectedSessionId!);
+      update();
+    }
+  }
+
+  Future<void> cancelBatchItem({
+    required String sessionId,
+    required String batchId,
+    required String itemId,
+    required String cancelReason,
+  }) async {
+    final response = await patch(
+      Uri.parse(
+        '$baseUrl/orders/restaurants/$restaurantId'
+        '/sessions/$sessionId/batches/$batchId/items/$itemId/status',
+      ),
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer $authToken',
+      },
+      body: json.encode({'status': 'CANCELLED', 'cancelReason': cancelReason}),
+    );
+    if (response.statusCode == 200 || response.statusCode == 201) {
+      fetchSessionDetail(sessionId);
+    }
+  }
+
+  /// Cancel an entire session
+  Future<void> cancelSession(String sessionId) async {
+    final response = await patch(
+      Uri.parse(
+        '$baseUrl/orders/restaurants/$restaurantId'
+        '/sessions/$sessionId/status',
+      ),
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer $authToken',
+      },
+      body: json.encode({'status': 'CANCELLED'}),
+    );
+    if (response.statusCode == 200 || response.statusCode == 201) {
+      // Reset biller state
+      billSummary = null;
+      selectedSession = null;
+      selectedSessionId = null;
+      subTotalAmount = '0';
+      taxAmount = '0';
+      totalAmount = '0';
+      nameController.clear();
+      phoneController.clear();
+      emailController.clear();
+
+      final DashboardController ctrl = Get.find();
+      ctrl.fetchAllPendingSession();
+      ctrl.fetchTables();
+      ctrl.update();
       update();
     }
   }

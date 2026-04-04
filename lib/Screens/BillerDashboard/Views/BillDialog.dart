@@ -312,7 +312,7 @@ class _BilldialogState extends State<Billdialog> {
                             SizedBox(height: 8.h),
                             _SummaryRow(
                               "Loyalty discount",
-                              "-\$${__.billSummary?.discountAmount ?? '0'}",
+                              "-\$${__.billSummary?.loyalityPointDiscountAmount ?? '0'}",
                               isDiscount: true,
                             ),
                           ],
@@ -481,8 +481,12 @@ class _Field extends StatelessWidget {
     child: TextField(
       controller: ctrl,
       style: TextStyle(fontSize: 12.sp, color: const Color(0xFF0F172A)),
+      textAlignVertical: TextAlignVertical.center,
+      
       decoration: InputDecoration(
         hintText: hint,
+        isDense: true,
+
         hintStyle: TextStyle(fontSize: 11.sp, color: const Color(0xFFCBD5E1)),
         border: InputBorder.none,
         contentPadding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 9.h),
