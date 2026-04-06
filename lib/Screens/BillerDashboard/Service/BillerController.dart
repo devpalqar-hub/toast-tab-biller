@@ -171,7 +171,9 @@ class BillerController extends GetxController {
       );
     } else {
       for (var data in newBatchItems) {
-        if (data.menuItemId == menu.id) {
+        if (data.menuItemId == menu.id &&
+            ((data.quantity ?? 0) < (menu.stockCount ?? 0) ||
+                menu.itemType != "STOCKABLE")) {
           data.quantity = data.quantity! + 1;
         }
       }
@@ -244,7 +246,8 @@ class BillerController extends GetxController {
           break;
         } else {
           if (items.first.itemType == "STOCKABLE") {
-            items.first.stockCount = items.first.stockCount! - 1;
+            items.first.stockCount =
+                items.first.stockCount! - (menu.quantity ?? 1);
             if (items.first.stockCount! < 1) {
               items.first.isOutOfStock = true;
               items.first.isAvailable = false;

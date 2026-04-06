@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:get/get_core/get_core.dart';
+import 'package:get/get_navigation/src/extension_navigation.dart';
 
 class CancelItemDialog extends StatefulWidget {
   final String itemName;
@@ -63,17 +65,22 @@ class _CancelItemDialogState extends State<CancelItemDialog> {
               child: Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Container(
-                    width: 30.w,
-                    height: 30.w,
-                    decoration: BoxDecoration(
-                      color: const Color(0xFFFEF2F2),
-                      borderRadius: BorderRadius.circular(7.r),
-                    ),
-                    child: Icon(
-                      Icons.remove_circle_outline,
-                      size: 15.sp,
-                      color: const Color(0xFFEF4444),
+                  InkWell(
+                    onTap: () {
+                      Get.back();
+                    },
+                    child: Container(
+                      width: 30.w,
+                      height: 30.w,
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFFEF2F2),
+                        borderRadius: BorderRadius.circular(7.r),
+                      ),
+                      child: Icon(
+                        Icons.remove_circle_outline,
+                        size: 15.sp,
+                        color: const Color(0xFFEF4444),
+                      ),
                     ),
                   ),
                   SizedBox(width: 10.w),

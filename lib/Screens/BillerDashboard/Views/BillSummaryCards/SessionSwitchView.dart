@@ -88,7 +88,7 @@ class SessionSwitchView extends StatelessWidget {
 
               // SESSION LABEL
               Padding(
-                padding: EdgeInsets.symmetric(horizontal: 8.w),
+                padding: EdgeInsets.symmetric(horizontal: 4.w),
                 child: Text(
                   isNewBill
                       ? "New Bill"
