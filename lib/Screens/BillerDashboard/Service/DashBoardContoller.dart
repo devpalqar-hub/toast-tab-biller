@@ -122,14 +122,16 @@ class DashboardController extends GetxController {
         "Authorization": "Bearer $authToken",
       },
     );
-    log(response.body);
 
     if (response.statusCode == 200) {
       for (var data in json.decode(response.body)["data"]) {
-        sessions.add(SessionModel.fromJson(data));
+        final session = SessionModel.fromJson(data);
+        if (sessions.where((it) => it.id == session.id).isEmpty) {
+          sessions.add(session);
+        }
+        update();
       }
-
-      update();
+      print(sessions);
     }
   }
 

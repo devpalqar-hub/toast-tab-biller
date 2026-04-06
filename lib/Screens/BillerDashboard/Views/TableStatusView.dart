@@ -86,14 +86,14 @@ class TableStatusView extends StatelessWidget {
                         .where((s) => s.tableId == table.id)
                         .toList();
                     final sessionCount = tableSessions.length;
-                    final activeSession = tableSessions.isNotEmpty
-                        ? tableSessions.firstWhere(
-                            (s) =>
-                                s.status?.toLowerCase() == 'open' ||
-                                s.status?.toLowerCase() == 'active',
-                            orElse: () => tableSessions.first,
-                          )
-                        : null;
+                    // final activeSession = tableSessions.isNotEmpty
+                    //     ? tableSessions.firstWhere(
+                    //         (s) =>
+                    //             s.status?.toLowerCase() == 'open' ||
+                    //             s.status?.toLowerCase() == 'active',
+                    //         orElse: () => tableSessions.first,
+                    //       )
+                    //     : null;
 
                     return (!table.isActive)
                         ? Container()
@@ -102,14 +102,8 @@ class TableStatusView extends StatelessWidget {
                             tableStatus: table.status ?? '',
                             statusColor: style.color,
                             statusBg: style.bg,
-                            sessionCount: tableSessions
-                                .where(
-                                  (s) =>
-                                      s.status?.toLowerCase() == 'open' ||
-                                      s.status?.toLowerCase() == 'active',
-                                )
-                                .length,
-                            guestCount: activeSession?.guestCount,
+                            sessionCount: tableSessions.length,
+                            guestCount: table.seatCount,
                             isSelected: isSelected,
                             onTap: () {
                               controller.biller.selectTable(
