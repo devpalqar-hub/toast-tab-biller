@@ -1,6 +1,9 @@
 import 'dart:async';
 import 'dart:developer';
+import 'dart:io';
+import 'dart:typed_data';
 import 'package:flutter/material.dart';
+import 'package:path_provider/path_provider.dart';
 import 'package:get/get.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:flutter_thermal_printer/flutter_thermal_printer.dart';
@@ -17,7 +20,8 @@ class PrinterController extends GetxController {
   Printer? selectedPrinter;
   bool isScanning = false;
   bool isPrinting = false;
-  bool mockMode = false; // ← Toggle for receipt preview without hardware
+  bool mockMode = false;
+  bool autoCut = true; // ← Auto-cut after printing
   String? savedDeviceAddress;
   String? savedDeviceName;
   ConnectionType savedConnectionType = ConnectionType.BLE;
@@ -29,6 +33,7 @@ class PrinterController extends GetxController {
   static const _kName = 'tp_name';
   static const _kConnType = 'tp_conn_type';
   static const _kMock = 'tp_mock_mode';
+  static const _kAutoCut = 'tp_auto_cut';
 
   // ── Lifecycle ─────────────────────────────────────────────────────────────
   @override
@@ -55,12 +60,22 @@ class PrinterController extends GetxController {
     _snack(mockMode ? "Mock printer enabled" : "Mock printer disabled");
   }
 
+  // ── Auto-cut toggle ───────────────────────────────────────────────────────
+  Future<void> toggleAutoCut() async {
+    autoCut = !autoCut;
+    final p = await SharedPreferences.getInstance();
+    await p.setBool(_kAutoCut, autoCut);
+    update();
+    _snack(autoCut ? "Auto-cut enabled" : "Auto-cut disabled");
+  }
+
   // ── Persistence ───────────────────────────────────────────────────────────
   Future<void> _loadSaved() async {
     final p = await SharedPreferences.getInstance();
     savedDeviceAddress = p.getString(_kAddress);
     savedDeviceName = p.getString(_kName);
     mockMode = p.getBool(_kMock) ?? false;
+    autoCut = p.getBool(_kAutoCut) ?? true;
     savedConnectionType = p.getString(_kConnType) == 'USB'
         ? ConnectionType.USB
         : ConnectionType.BLE;
@@ -107,12 +122,14 @@ class PrinterController extends GetxController {
     final match = availableDevices.firstWhereOrNull(
       (p) => _addrOf(p) == savedDeviceAddress,
     );
-    if (match != null) await connectPrinter(match, persist: false);
+    // ✅ Stop scan BEFORE connecting so the stream cannot overwrite state
     await stopScan();
+    if (match != null) await connectPrinter(match, persist: false);
   }
 
   // ── Scan ──────────────────────────────────────────────────────────────────
   Future<void> startScan({bool silent = false}) async {
+    log("scanning printer");
     if (!silent) {
       isScanning = true;
       availableDevices = [];
@@ -120,14 +137,19 @@ class PrinterController extends GetxController {
     }
     _scanSub?.cancel();
 
-    await _plugin.getPrinters(
-      connectionTypes: [ConnectionType.BLE, ConnectionType.USB],
-    );
+    await _plugin.getPrinters(connectionTypes: [ConnectionType.USB]);
 
     _scanSub = _plugin.devicesStream.listen((devices) {
-      availableDevices = devices
-          .where((d) => d.name != null && d.name!.isNotEmpty)
-          .toList();
+      // ✅ Preserve isConnected for already-connected printer
+      availableDevices = devices.map((d) {
+        if (selectedPrinter != null &&
+            _addrOf(d) == _addrOf(selectedPrinter!) &&
+            selectedPrinter!.isConnected == true) {
+          return d.copyWith(isConnected: true);
+        }
+        return d;
+      }).toList();
+
       if (!silent) {
         isScanning = false;
         update();
@@ -143,15 +165,28 @@ class PrinterController extends GetxController {
   }
 
   // ── Connect / Disconnect ──────────────────────────────────────────────────
-  Future<bool> connectPrinter(Printer printer, {bool persist = true}) async {
+  Future<bool> connectPrinter(Printer printerArg, {bool persist = true}) async {
+    final printer = printerArg;
     try {
       await _plugin.connect(printer);
-      selectedPrinter =
-          availableDevices.firstWhereOrNull(
-            (p) => _addrOf(p) == _addrOf(printer),
-          ) ??
-          printer;
-      selectedPrinter = selectedPrinter!.copyWith(isConnected: true);
+
+      // ✅ Build a connected copy
+      final connectedPrinter =
+          (availableDevices.firstWhereOrNull(
+                    (p) => _addrOf(p) == _addrOf(printer),
+                  ) ??
+                  printer)
+              .copyWith(isConnected: true);
+
+      selectedPrinter = connectedPrinter;
+
+      // ✅ Also reflect connected state in availableDevices list
+      availableDevices = availableDevices.map((p) {
+        return _addrOf(p) == _addrOf(printer)
+            ? p.copyWith(isConnected: true)
+            : p;
+      }).toList();
+
       if (persist) await persistDevice(printer);
       update();
       return true;
@@ -167,19 +202,30 @@ class PrinterController extends GetxController {
       try {
         await _plugin.disconnect(selectedPrinter!);
       } catch (_) {}
+
+      // ✅ Reflect disconnected state in availableDevices list too
+      final addr = _addrOf(selectedPrinter!);
+      availableDevices = availableDevices.map((p) {
+        return _addrOf(p) == addr ? p.copyWith(isConnected: false) : p;
+      }).toList();
+
       selectedPrinter = null;
       update();
     }
   }
 
   // ── Getters ───────────────────────────────────────────────────────────────
-
-  /// True when a real printer is connected OR mock mode is on
   bool get canPrint => isConnected || mockMode;
-
   bool get isConnected => selectedPrinter?.isConnected == true;
   bool get hasSavedDevice => savedDeviceAddress != null;
   bool isSaved(Printer p) => _addrOf(p) == savedDeviceAddress;
+
+  /// Converts display name → CUPS queue name
+  /// e.g. "Printer POS-80" → "Printer_POS_80"
+  String _cupsSafeName(String? name) {
+    if (name == null || name.isEmpty) return '';
+    return name.trim().replaceAll(RegExp(r'[\s\-]+'), '_');
+  }
 
   String _addrOf(Printer p) {
     if (p.connectionType == ConnectionType.USB) {
@@ -201,7 +247,7 @@ class PrinterController extends GetxController {
     }
   }
 
-  // ── Print Bill (real + mock) ───────────────────────────────────────────────
+  // ── Print Bill ────────────────────────────────────────────────────────────
   Future<void> printBill({
     required BuildContext context,
     required BillSummaryModel bill,
@@ -210,7 +256,7 @@ class PrinterController extends GetxController {
     String? restaurantAddress,
     String? restaurantPhone,
   }) async {
-    // ── MOCK MODE: show on-screen receipt preview ──────────────────────────
+    // ── MOCK MODE ──────────────────────────────────────────────────────────
     if (mockMode) {
       Get.dialog(
         ReceiptPreviewDialog(
@@ -226,7 +272,7 @@ class PrinterController extends GetxController {
       return;
     }
 
-    // ── REAL MODE: send ESC/POS bytes to printer ───────────────────────────
+    // ── REAL MODE ──────────────────────────────────────────────────────────
     if (!isConnected || selectedPrinter == null) {
       _snack("No printer connected", isError: true);
       return;
@@ -249,7 +295,7 @@ class PrinterController extends GetxController {
 
       List<int> bytes = [];
 
-      // ── Header ────────────────────────────────────────────────
+      // ── Header ────────────────────────────────────────────────────────────
       bytes += generator.text(
         restaurantName.toUpperCase(),
         styles: const PosStyles(
@@ -274,7 +320,7 @@ class PrinterController extends GetxController {
       bytes += generator.hr();
       bytes += generator.feed(1);
 
-      // ── Bill meta ─────────────────────────────────────────────
+      // ── Bill meta ─────────────────────────────────────────────────────────
       bytes += generator.row([
         PosColumn(text: "Table:", width: 5),
         PosColumn(
@@ -324,7 +370,7 @@ class PrinterController extends GetxController {
       bytes += generator.feed(1);
       bytes += generator.hr();
 
-      // ── Items header ──────────────────────────────────────────
+      // ── Items header ──────────────────────────────────────────────────────
       bytes += generator.row([
         PosColumn(
           text: "ITEM",
@@ -352,7 +398,7 @@ class PrinterController extends GetxController {
       ]);
       bytes += generator.hr();
 
-      // ── Items ─────────────────────────────────────────────────
+      // ── Items ─────────────────────────────────────────────────────────────
       for (final item in (bill.items ?? [])) {
         final name = item.name ?? item.menuItem?.name ?? "Item";
         final displayName = name.length > 22
@@ -375,7 +421,7 @@ class PrinterController extends GetxController {
       bytes += generator.hr();
       bytes += generator.feed(1);
 
-      // ── Totals ────────────────────────────────────────────────
+      // ── Totals ────────────────────────────────────────────────────────────
       bytes += generator.row([
         PosColumn(text: "Subtotal", width: 7),
         PosColumn(
@@ -450,7 +496,7 @@ class PrinterController extends GetxController {
       bytes += generator.hr(ch: '=');
       bytes += generator.feed(1);
 
-      // ── Footer ────────────────────────────────────────────────
+      // ── Footer ────────────────────────────────────────────────────────────
       bytes += generator.text(
         "Thank you for dining with us!",
         styles: const PosStyles(align: PosAlign.center, bold: true),
@@ -459,10 +505,22 @@ class PrinterController extends GetxController {
         "Please come again",
         styles: const PosStyles(align: PosAlign.center),
       );
-      bytes += generator.feed(3);
-      bytes += generator.cut();
 
-      await _plugin.printData(selectedPrinter!, bytes, longData: true);
+      // ── Auto-cut ──────────────────────────────────────────────────────────
+      // Feed extra lines only when NOT cutting (so paper is readable before tear)
+      if (autoCut) {
+        bytes += generator.feed(2);
+        bytes += generator.cut(); // full cut
+      } else {
+        bytes += generator.feed(4); // manual-tear margin
+      }
+
+      if (Platform.isMacOS) {
+        // ── macOS: bypass plugin CUPS path, call lp directly with safe name ──
+        await _printViaCups(bytes);
+      } else {
+        await _plugin.printData(selectedPrinter!, bytes, longData: true);
+      }
       _snack("Bill printed successfully");
     } catch (e) {
       log("Print error: $e");
@@ -473,6 +531,49 @@ class PrinterController extends GetxController {
     update();
   }
 
+  // ── Direct CUPS print (macOS only) ───────────────────────────────────────
+  /// Writes [bytes] to a temp file and sends it to CUPS using the sanitized
+  /// queue name, bypassing the plugin's broken name-handling entirely.
+  Future<void> _printViaCups(List<int> bytes) async {
+    final queueName = _cupsSafeName(selectedPrinter!.name);
+    if (queueName.isEmpty) throw Exception("No printer name available");
+
+    // Use ApplicationSupport dir — guaranteed to exist in macOS sandbox
+    final baseDir = await getApplicationSupportDirectory();
+    final printDir = Directory('${baseDir.path}/thermal_prints');
+    if (!await printDir.exists()) await printDir.create(recursive: true);
+
+    final file = File(
+      '${printDir.path}/thermal_print_${DateTime.now().millisecondsSinceEpoch}.bin',
+    );
+    await file.writeAsBytes(Uint8List.fromList(bytes), flush: true);
+
+    log("[Printer] Sending ${bytes.length} bytes to CUPS queue: $queueName");
+
+    final result = await Process.run('/usr/bin/lp', [
+      '-d',
+      queueName,
+      '-o',
+      'raw',
+      file.path,
+    ]);
+
+    // Clean up temp file
+    try {
+      await file.delete();
+    } catch (_) {}
+
+    if (result.exitCode != 0) {
+      final err = result.stderr.toString().trim();
+      log("[Printer] CUPS error: $err");
+      throw Exception("CUPS print failed (exit ${result.exitCode}): $err");
+    }
+
+    log("[Printer] CUPS accepted job for $queueName");
+  }
+
   // ── Snackbar ──────────────────────────────────────────────────────────────
-  void _snack(String msg, {bool isError = false}) {}
+  void _snack(String msg, {bool isError = false}) {
+    log("[Printer] ${isError ? 'ERROR' : 'INFO'}: $msg");
+  }
 }

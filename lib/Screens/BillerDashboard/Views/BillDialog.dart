@@ -28,7 +28,7 @@ class _BilldialogState extends State<Billdialog> {
           return Center(
             child: Container(
               width: 640.w,
-              constraints: BoxConstraints(maxHeight: 460.h),
+              constraints: BoxConstraints(maxHeight: 500.h),
               decoration: BoxDecoration(
                 borderRadius: BorderRadius.circular(14.r),
                 color: Colors.white,
@@ -37,7 +37,7 @@ class _BilldialogState extends State<Billdialog> {
               child: Row(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  // ── LEFT: Customer info ──────────────────────────
+                  // ── LEFT: Customer info ─────────────────────────────────
                   Expanded(
                     flex: 11,
                     child: Container(
@@ -215,7 +215,7 @@ class _BilldialogState extends State<Billdialog> {
                     color: const Color(0xFFE2E8F0),
                   ),
 
-                  // ── RIGHT: Bill summary & actions ────────────────
+                  // ── RIGHT: Bill summary & actions ───────────────────────
                   Expanded(
                     flex: 9,
                     child: Container(
@@ -224,7 +224,7 @@ class _BilldialogState extends State<Billdialog> {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          // Bill summary header with printer status indicator
+                          // Bill summary header with printer status badge
                           Row(
                             children: [
                               Text(
@@ -352,7 +352,100 @@ class _BilldialogState extends State<Billdialog> {
 
                           const Spacer(),
 
-                          // ── Print Bill button ─────────────────────
+                          // ── Auto-cut toggle ─────────────────────────────
+                          GetBuilder<PrinterController>(
+                            builder: (p) => GestureDetector(
+                              onTap: p.mockMode ? null : p.toggleAutoCut,
+                              child: AnimatedContainer(
+                                duration: const Duration(milliseconds: 200),
+                                padding: EdgeInsets.symmetric(
+                                  horizontal: 10.w,
+                                  vertical: 7.h,
+                                ),
+                                margin: EdgeInsets.only(bottom: 8.h),
+                                decoration: BoxDecoration(
+                                  color: p.mockMode
+                                      ? const Color(0xFFF8FAFC)
+                                      : p.autoCut
+                                      ? const Color(0xFFF0FDF4)
+                                      : const Color(0xFFF8FAFC),
+                                  borderRadius: BorderRadius.circular(8.r),
+                                  border: Border.all(
+                                    color: p.mockMode
+                                        ? const Color(0xFFE2E8F0)
+                                        : p.autoCut
+                                        ? const Color(
+                                            0xFF10B981,
+                                          ).withOpacity(0.35)
+                                        : const Color(0xFFE2E8F0),
+                                  ),
+                                ),
+                                child: Row(
+                                  children: [
+                                    Icon(
+                                      Icons.content_cut_rounded,
+                                      size: 13.sp,
+                                      color: p.mockMode
+                                          ? const Color(0xFFCBD5E1)
+                                          : p.autoCut
+                                          ? const Color(0xFF10B981)
+                                          : const Color(0xFF94A3B8),
+                                    ),
+                                    SizedBox(width: 8.w),
+                                    Expanded(
+                                      child: Text(
+                                        "Auto-cut paper after print",
+                                        style: TextStyle(
+                                          fontSize: 11.sp,
+                                          fontWeight: FontWeight.w600,
+                                          color: p.mockMode
+                                              ? const Color(0xFFCBD5E1)
+                                              : const Color(0xFF475569),
+                                        ),
+                                      ),
+                                    ),
+                                    // Toggle pill
+                                    AnimatedContainer(
+                                      duration: const Duration(
+                                        milliseconds: 200,
+                                      ),
+                                      width: 32.w,
+                                      height: 17.h,
+                                      decoration: BoxDecoration(
+                                        borderRadius: BorderRadius.circular(
+                                          20.r,
+                                        ),
+                                        color: p.mockMode
+                                            ? const Color(0xFFE2E8F0)
+                                            : p.autoCut
+                                            ? const Color(0xFF10B981)
+                                            : const Color(0xFFCBD5E1),
+                                      ),
+                                      child: AnimatedAlign(
+                                        duration: const Duration(
+                                          milliseconds: 200,
+                                        ),
+                                        alignment: (!p.mockMode && p.autoCut)
+                                            ? Alignment.centerRight
+                                            : Alignment.centerLeft,
+                                        child: Container(
+                                          margin: EdgeInsets.all(2.r),
+                                          width: 13.w,
+                                          height: 13.w,
+                                          decoration: const BoxDecoration(
+                                            shape: BoxShape.circle,
+                                            color: Colors.white,
+                                          ),
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                          ),
+
+                          // ── Print Bill button ───────────────────────────
                           GetBuilder<PrinterController>(
                             builder: (p) => _ActionBtn(
                               label: p.isPrinting
@@ -381,7 +474,6 @@ class _BilldialogState extends State<Billdialog> {
                                   ? () {}
                                   : () {
                                       if (!p.canPrint) {
-                                        // Open printer settings if not connected and not mock
                                         Get.back();
                                         Get.dialog(
                                           const PrinterSettingsDialog(),
@@ -408,7 +500,7 @@ class _BilldialogState extends State<Billdialog> {
 
                           SizedBox(height: 8.h),
 
-                          // ── Mark as paid ──────────────────────────
+                          // ── Mark as paid ────────────────────────────────
                           _ActionBtn(
                             label: "Mark as paid & close",
                             icon: Icons.check_circle_outline,
@@ -449,7 +541,7 @@ class _BilldialogState extends State<Billdialog> {
   }
 }
 
-// ── Helpers (unchanged from original) ─────────────────────────────────────────
+// ── Helpers ───────────────────────────────────────────────────────────────────
 class _Label extends StatelessWidget {
   final String text;
   const _Label(this.text);
@@ -482,11 +574,9 @@ class _Field extends StatelessWidget {
       controller: ctrl,
       style: TextStyle(fontSize: 12.sp, color: const Color(0xFF0F172A)),
       textAlignVertical: TextAlignVertical.center,
-      
       decoration: InputDecoration(
         hintText: hint,
         isDense: true,
-
         hintStyle: TextStyle(fontSize: 11.sp, color: const Color(0xFFCBD5E1)),
         border: InputBorder.none,
         contentPadding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 9.h),

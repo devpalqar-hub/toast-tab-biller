@@ -28,5 +28,7 @@
 	<string>MainMenu</string>
 	<key>NSPrincipalClass</key>
 	<string>NSApplication</string>
+	<key>NSUSBUsageDescription</key>
+	<string>This app needs USB access to connect to thermal printers.</string>
 </dict>
 </plist>
