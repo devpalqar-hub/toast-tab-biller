@@ -5,14 +5,19 @@ class BillSummaryModel {
   String? subtotal;
   String? taxRate;
   String? taxAmount;
+  String? grossAmount;
   String? discountAmount;
-  String? totalAmount;
+  String? coupounDiscountAmount;
   String? loyalityPointDiscountAmount;
+  String? totalAmount;
   String? notes;
+
   List<Items>? items;
   Session? session;
   Coupon? coupon;
   Loyalty? loyalty;
+
+  List<ApplicableLoyaltyOffers>? applicableLoyaltyOffers;
 
   BillSummaryModel({
     this.sessionId,
@@ -21,67 +26,109 @@ class BillSummaryModel {
     this.subtotal,
     this.taxRate,
     this.taxAmount,
+    this.grossAmount,
     this.discountAmount,
+    this.coupounDiscountAmount,
+    this.loyalityPointDiscountAmount,
     this.totalAmount,
     this.notes,
     this.items,
     this.session,
     this.coupon,
     this.loyalty,
-    this.loyalityPointDiscountAmount,
+    this.applicableLoyaltyOffers,
   });
 
   BillSummaryModel.fromJson(Map<String, dynamic> json) {
     sessionId = json['sessionId'];
     restaurantId = json['restaurantId'];
     status = json['status'];
-    subtotal = json['subtotal'];
-    taxRate = json['taxRate'];
-    taxAmount = json['taxAmount'];
-    discountAmount = json['discountAmount'];
-    totalAmount = json['totalAmount'];
-    loyalityPointDiscountAmount = json["loyalityPointDiscountAmount"];
+    subtotal = json['subtotal']?.toString();
+    taxRate = json['taxRate']?.toString();
+    taxAmount = json['taxAmount']?.toString();
+    grossAmount = json['grossAmount']?.toString();
+    discountAmount = json['discountAmount']?.toString();
+    coupounDiscountAmount =
+        json['coupounDiscountAmount']?.toString();
+    loyalityPointDiscountAmount =
+        json['loyalityPointDiscountAmount']?.toString();
+    totalAmount = json['totalAmount']?.toString();
     notes = json['notes'];
+
     if (json['items'] != null) {
       items = <Items>[];
       json['items'].forEach((v) {
-        items!.add(new Items.fromJson(v));
+        items!.add(Items.fromJson(v));
       });
     }
-    session = json['session'] != null
-        ? new Session.fromJson(json['session'])
-        : null;
-    coupon = json['coupon'] != null
-        ? new Coupon.fromJson(json['coupon'])
-        : null;
-    loyalty = json['loyalty'] != null
-        ? new Loyalty.fromJson(json['loyalty'])
-        : null;
+
+    session =
+        json['session'] != null
+            ? Session.fromJson(json['session'])
+            : null;
+
+    coupon =
+        json['coupon'] != null
+            ? Coupon.fromJson(json['coupon'])
+            : null;
+
+    loyalty =
+        json['loyalty'] != null
+            ? Loyalty.fromJson(json['loyalty'])
+            : null;
+
+    if (json['applicableLoyaltyOffers'] != null) {
+      applicableLoyaltyOffers = <ApplicableLoyaltyOffers>[];
+
+      json['applicableLoyaltyOffers'].forEach((v) {
+        applicableLoyaltyOffers!
+            .add(ApplicableLoyaltyOffers.fromJson(v));
+      });
+    }
   }
 
   Map<String, dynamic> toJson() {
-    final Map<String, dynamic> data = new Map<String, dynamic>();
-    data['sessionId'] = this.sessionId;
-    data['restaurantId'] = this.restaurantId;
-    data['status'] = this.status;
-    data['subtotal'] = this.subtotal;
-    data['taxRate'] = this.taxRate;
-    data['taxAmount'] = this.taxAmount;
-    data['discountAmount'] = this.discountAmount;
-    data['totalAmount'] = this.totalAmount;
-    data['notes'] = this.notes;
-    if (this.items != null) {
-      data['items'] = this.items!.map((v) => v.toJson()).toList();
+    final Map<String, dynamic> data = {};
+
+    data['sessionId'] = sessionId;
+    data['restaurantId'] = restaurantId;
+    data['status'] = status;
+    data['subtotal'] = subtotal;
+    data['taxRate'] = taxRate;
+    data['taxAmount'] = taxAmount;
+    data['grossAmount'] = grossAmount;
+    data['discountAmount'] = discountAmount;
+    data['coupounDiscountAmount'] =
+        coupounDiscountAmount;
+    data['loyalityPointDiscountAmount'] =
+        loyalityPointDiscountAmount;
+    data['totalAmount'] = totalAmount;
+    data['notes'] = notes;
+
+    if (items != null) {
+      data['items'] =
+          items!.map((v) => v.toJson()).toList();
     }
-    if (this.session != null) {
-      data['session'] = this.session!.toJson();
+
+    if (session != null) {
+      data['session'] = session!.toJson();
     }
-    if (this.coupon != null) {
-      data['coupon'] = this.coupon!.toJson();
+
+    if (coupon != null) {
+      data['coupon'] = coupon!.toJson();
     }
-    if (this.loyalty != null) {
-      data['loyalty'] = this.loyalty!.toJson();
+
+    if (loyalty != null) {
+      data['loyalty'] = loyalty!.toJson();
     }
+
+    if (applicableLoyaltyOffers != null) {
+      data['applicableLoyaltyOffers'] =
+          applicableLoyaltyOffers!
+              .map((v) => v.toJson())
+              .toList();
+    }
+
     return data;
   }
 }
@@ -249,6 +296,80 @@ class Loyalty {
     data['customerId'] = this.customerId;
     data['customerName'] = this.customerName;
     data['totalPoints'] = this.totalPoints;
+    return data;
+  }
+}
+class ApplicableLoyaltyOffers {
+  String? id;
+  String? name;
+  String? type;
+
+  int? pointsRequired;
+  int? redeemAmount;
+
+  String? validFrom;
+  String? validTo;
+
+  List<dynamic>? menuItems;
+
+  bool? customerCanRedeem;
+
+  int? customerWallet;
+  int? pointsShortfall;
+
+  ApplicableLoyaltyOffers({
+    this.id,
+    this.name,
+    this.type,
+    this.pointsRequired,
+    this.redeemAmount,
+    this.validFrom,
+    this.validTo,
+    this.menuItems,
+    this.customerCanRedeem,
+    this.customerWallet,
+    this.pointsShortfall,
+  });
+
+  ApplicableLoyaltyOffers.fromJson(
+      Map<String, dynamic> json) {
+    id = json['id'];
+    name = json['name'];
+    type = json['type'];
+
+    pointsRequired = json['pointsRequired'];
+    redeemAmount = json['redeemAmount'];
+
+    validFrom = json['validFrom'];
+    validTo = json['validTo'];
+
+    menuItems = json['menuItems'];
+
+    customerCanRedeem =
+        json['customerCanRedeem'];
+
+    customerWallet = json['customerWallet'];
+
+    pointsShortfall = json['pointsShortfall'];
+  }
+
+  Map<String, dynamic> toJson() {
+    final Map<String, dynamic> data = {};
+
+    data['id'] = id;
+    data['name'] = name;
+    data['type'] = type;
+    data['pointsRequired'] = pointsRequired;
+    data['redeemAmount'] = redeemAmount;
+    data['validFrom'] = validFrom;
+    data['validTo'] = validTo;
+    data['menuItems'] = menuItems;
+    data['customerCanRedeem'] =
+        customerCanRedeem;
+    data['customerWallet'] = customerWallet;
+    data['pointsShortfall'] =
+        pointsShortfall;
+
     return data;
   }
 }

@@ -1,5 +1,4 @@
 import 'dart:convert';
-
 import 'package:flutter/widgets.dart';
 import 'package:get/instance_manager.dart';
 import 'package:get/state_manager.dart';
@@ -27,6 +26,8 @@ class BillerController extends GetxController {
   TextEditingController emailController = TextEditingController();
   TextEditingController phoneController = TextEditingController();
   bool claimLoyality = false;
+  String? selectedLoyaltyOfferId;
+
   fetchSessionDetail(String sessionId) async {
     String parms = "";
     if (nameController.text.isNotEmpty) {
@@ -42,20 +43,28 @@ class BillerController extends GetxController {
     if (claimLoyality) {
       parms = parms + "claimedLoyalityPoints=true&";
     }
+    if (selectedLoyaltyOfferId != null) {
+      parms += "loyalityOfferId=$selectedLoyaltyOfferId&";
+    }
+
+    final url =
+        "$baseUrl/orders/restaurants/${restaurantId}/sessions/${sessionId}/bill/preview?$parms";
 
     final response = await get(
-      Uri.parse(
-        baseUrl +
-            "/orders/restaurants/${restaurantId}/sessions/${selectedSessionId}/bill/preview?$parms",
-      ),
+      Uri.parse(url),
+
       headers: {
         "Content-Type": "application/json",
         "Authorization": "Bearer $authToken",
       },
     );
+
     billSummary = null;
     update();
+
     if (response.statusCode == 200) {
+      final decodedData = json.decode(response.body);
+
       billSummary = BillSummaryModel.fromJson(
         json.decode(response.body)["data"],
       );
@@ -78,60 +87,76 @@ class BillerController extends GetxController {
   }
 
   checkoutBill(String sessionId) async {
-    String parms = "";
-    if (nameController.text.isNotEmpty) {
-      parms = parms + "customerName=${nameController.text.trim()}&";
-    }
-    if (phoneController.text.isNotEmpty) {
-      parms = parms + "customerPhone=${phoneController.text.trim()}&";
-    }
-    if (emailController.text.isNotEmpty) {
-      parms = parms + "customerEmail=${emailController.text.trim()}&";
-    }
+    try {
+      String parms = "";
 
-    if (claimLoyality) {
-      parms = parms + "claimedLoyalityPoints=true&";
-    }
+      if (nameController.text.isNotEmpty) {
+        parms +=
+            "customerName=${Uri.encodeComponent(nameController.text.trim())}&";
+      }
 
-    final response = await post(
-      Uri.parse(
-        baseUrl +
-            "/orders/restaurants/${restaurantId}/sessions/${selectedSessionId}/bill/",
-      ),
-      body: json.encode({
+      if (phoneController.text.isNotEmpty) {
+        parms +=
+            "customerPhone=${Uri.encodeComponent(phoneController.text.trim())}&";
+      }
+
+      if (emailController.text.isNotEmpty) {
+        parms +=
+            "customerEmail=${Uri.encodeComponent(emailController.text.trim())}&";
+      }
+      if (selectedLoyaltyOfferId != null) {
+        parms += "loyaltyOfferId=${selectedLoyaltyOfferId!}&";
+      }
+
+      if (claimLoyality) {
+        parms += "claimedLoyalityPoints=true&";
+      }
+
+      final url =
+          "$baseUrl/orders/restaurants/$restaurantId/sessions/$selectedSessionId/bill/";
+
+      final requestBody = {
         if (nameController.text.isNotEmpty)
           "customerName": nameController.text.trim(),
+
         if (phoneController.text.isNotEmpty)
           "customerPhone": phoneController.text.trim(),
+
         if (emailController.text.isNotEmpty)
           "customerEmail": emailController.text.trim(),
-        if (claimLoyality &&
-            billSummary!.loyalty != null &&
-            billSummary!.loyalty!.totalPoints != "0")
-          'claimedLoyalityPoints': claimLoyality,
-        "guestCount": selectedTable!.seatCount,
-      }),
-      headers: {
-        "Content-Type": "application/json",
-        "Authorization": "Bearer $authToken",
-      },
-    );
 
-    if (response.statusCode == 200 || response.statusCode == 201) {
-      billSummary = null;
-      selectedSession = null;
-      selectedSessionId = null;
-      subTotalAmount = "0";
-      taxAmount = "0";
-      totalAmount = '0';
-      emailController.text = "";
-      nameController.text = "";
-      phoneController.text = "";
-      DashboardController ctrl = Get.find();
-      ctrl.fetchAllPendingSession();
-      ctrl.fetchTables();
-      update();
-    } else {}
+        "guestCount": selectedTable!.seatCount,
+      };
+
+      final response = await post(
+        Uri.parse(url),
+        body: json.encode(requestBody),
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": "Bearer $authToken",
+        },
+      );
+
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        billSummary = null;
+        selectedSession = null;
+        selectedSessionId = null;
+
+        subTotalAmount = "0";
+        taxAmount = "0";
+        totalAmount = "0";
+
+        emailController.clear();
+        nameController.clear();
+        phoneController.clear();
+
+        DashboardController ctrl = Get.find();
+
+        await ctrl.fetchTables();
+
+        update();
+      } else {}
+    } catch (e, stackTrace) {}
   }
 
   selectTable(TableData table, List<SessionModel> sessions) {

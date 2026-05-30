@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
 import 'package:toasttab/Screens/BillerDashboard/Models/Response/CustomerModel.dart';
+import 'package:toasttab/Screens/BillerDashboard/Models/Response/Ordersession.dart';
 import 'package:toasttab/Screens/BillerDashboard/Service/BillerController.dart';
 import 'package:toasttab/Screens/BillerDashboard/Service/DashBoardContoller.dart';
 import 'package:toasttab/Screens/BillerDashboard/Service/PrinterController.dart';
@@ -102,24 +103,41 @@ class _BilldialogState extends State<Billdialog> {
                           // Customer search
                           _Label("Customer name"),
                           SizedBox(height: 5.h),
-                          SearchDropdownField<CustomerModel>(
-                            hint: "Search customer",
-                            prefixIcon: Icons.person_outline,
-                            controller: __.nameController,
-                            displayText: (v) => v.name ?? "No Name",
-                            onSelected: (v) {
-                              controller.biller.nameController.text =
-                                  v.name ?? "";
-                              controller.biller.phoneController.text =
-                                  v.phone ?? "";
-                              controller.biller.emailController.text =
-                                  v.email ?? "";
-                              controller.update();
-                              controller.biller.update();
-                            },
-                            onSearch: (q) async =>
-                                await controller.fetchCustomer(q),
-                          ),
+                         SearchDropdownField<CustomerModel>(
+  hint: "Search customer",
+  prefixIcon: Icons.person_outline,
+  controller: __.nameController,
+
+  displayText: (v) => v.name ?? "No Name",
+
+  /// SEARCH ONLY
+  onSearch: (q) async {
+    return await controller.fetchCustomer(q);
+  },
+
+  /// CALL ONLY AFTER SELECTING DROPDOWN ITEM
+  onSelected: (v) async {
+
+    /// SET CUSTOMER DETAILS
+    __.nameController.text = v.name ?? "";
+    __.phoneController.text = v.phone ?? "";
+    __.emailController.text = v.email ?? "";
+
+    /// CLEAR OLD DATA
+    __.billSummary = null;
+    __.selectedLoyaltyOfferId = null;
+    __.claimLoyality = false;
+
+    __.update();
+
+    /// FETCH SESSION DETAILS
+    await __.fetchSessionDetail(
+      __.selectedSessionId ?? "",
+    );
+  },
+),
+
+
                           SizedBox(height: 10.h),
 
                           Row(
@@ -151,59 +169,185 @@ class _BilldialogState extends State<Billdialog> {
                           ),
                           SizedBox(height: 12.h),
 
-                          // Loyalty
-                          GestureDetector(
-                            onTap: () {
-                              __.claimLoyality = !__.claimLoyality;
-                              __.update();
-                              __.fetchSessionDetail(__.selectedSessionId ?? "");
-                            },
-                            child: Container(
-                              padding: EdgeInsets.symmetric(
-                                horizontal: 10.w,
-                                vertical: 8.h,
-                              ),
-                              decoration: BoxDecoration(
-                                color: __.claimLoyality
-                                    ? const Color(0xFFF0F7FF)
-                                    : const Color(0xFFF8FAFC),
-                                borderRadius: BorderRadius.circular(8.r),
-                                border: Border.all(
-                                  color: __.claimLoyality
-                                      ? const Color(0xFF2F80ED).withOpacity(0.3)
-                                      : const Color(0xFFE2E8F0),
-                                ),
-                              ),
-                              child: Row(
-                                children: [
-                                  Icon(
-                                    __.claimLoyality
-                                        ? Icons.check_circle
-                                        : Icons.circle_outlined,
-                                    size: 14.sp,
-                                    color: __.claimLoyality
-                                        ? const Color(0xFF2F80ED)
-                                        : const Color(0xFFCBD5E1),
-                                  ),
-                                  SizedBox(width: 8.w),
-                                  Icon(
-                                    Icons.stars_outlined,
-                                    size: 13.sp,
-                                    color: const Color(0xFFF2994A),
-                                  ),
-                                  SizedBox(width: 5.w),
-                                  Text(
-                                    "Redeem loyalty points",
-                                    style: TextStyle(
-                                      fontSize: 11.sp,
-                                      fontWeight: FontWeight.w600,
-                                      color: const Color(0xFF475569),
-                                    ),
-                                  ),
-                                ],
-                              ),
+                         // Applicable Loyalty Offers
+if ( __.billSummary?.applicableLoyaltyOffers != null &&
+    __.billSummary!.applicableLoyaltyOffers!.isNotEmpty) ...[
+      
+  _Label("Available loyalty offers"),
+  SizedBox(height: 8.h),
+
+  Expanded(
+    child: ListView.separated(
+      shrinkWrap: true,
+      itemCount:
+          __.billSummary!.applicableLoyaltyOffers!.length,
+      separatorBuilder: (_, ____) =>
+          SizedBox(height: 8.h),
+      itemBuilder: (context, index) {
+        final offer =
+            __.billSummary!
+                .applicableLoyaltyOffers![index];
+
+        final bool isSelected =
+            __.selectedLoyaltyOfferId == offer.id;
+
+        return GestureDetector(
+          onTap: () {
+            __.selectedLoyaltyOfferId =
+                isSelected ? null : offer.id;
+
+            __.claimLoyality = !isSelected;
+
+            __.update();
+
+            __.fetchSessionDetail(
+              __.selectedSessionId ?? "",
+            );
+          },
+
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 200),
+
+            padding: EdgeInsets.all(10.w),
+
+            decoration: BoxDecoration(
+              color: isSelected
+                  ? const Color(0xFFEFF6FF)
+                  : Colors.white,
+
+              borderRadius:
+                  BorderRadius.circular(10.r),
+
+              border: Border.all(
+                color: isSelected
+                    ? const Color(0xFF2F80ED)
+                    : const Color(0xFFE2E8F0),
+              ),
+            ),
+
+            child: Column(
+              crossAxisAlignment:
+                  CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        offer.name ?? "",
+                        style: TextStyle(
+                          fontSize: 12.sp,
+                          fontWeight: FontWeight.w700,
+                          color:
+                              const Color(0xFF0F172A),
+                        ),
+                      ),
+                    ),
+
+                    Icon(
+                      isSelected
+                          ? Icons.check_circle
+                          : Icons.circle_outlined,
+                      size: 18.sp,
+                      color: isSelected
+                          ? const Color(0xFF2F80ED)
+                          : const Color(0xFFCBD5E1),
+                    ),
+                  ],
+                ),
+
+                SizedBox(height: 6.h),
+
+                Row(
+                  children: [
+                    Container(
+                      padding: EdgeInsets.symmetric(
+                        horizontal: 7.w,
+                        vertical: 3.h,
+                      ),
+
+                      decoration: BoxDecoration(
+                        color:
+                            const Color(0xFFF1F5F9),
+                        borderRadius:
+                            BorderRadius.circular(
+                              5.r,
                             ),
-                          ),
+                      ),
+
+                      child: Text(
+                        "${offer.pointsRequired ?? 0} pts",
+                        style: TextStyle(
+                          fontSize: 10.sp,
+                          fontWeight:
+                              FontWeight.w600,
+                          color:
+                              const Color(0xFF475569),
+                        ),
+                      ),
+                    ),
+
+                    SizedBox(width: 6.w),
+
+                    Container(
+                      padding: EdgeInsets.symmetric(
+                        horizontal: 7.w,
+                        vertical: 3.h,
+                      ),
+
+                      decoration: BoxDecoration(
+                        color:
+                            const Color(0xFFECFDF5),
+                        borderRadius:
+                            BorderRadius.circular(
+                              5.r,
+                            ),
+                      ),
+
+                      child: Text(
+                        "₹${offer.redeemAmount ?? 0} OFF",
+                        style: TextStyle(
+                          fontSize: 10.sp,
+                          fontWeight:
+                              FontWeight.w700,
+                          color:
+                              const Color(0xFF10B981),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+
+                SizedBox(height: 6.h),
+
+                Text(
+                  offer.customerCanRedeem == true
+                      ? "Eligible • Wallet: ${offer.customerWallet}"
+                      : "Need ${offer.pointsShortfall} more points",
+
+                  style: TextStyle(
+                    fontSize: 10.sp,
+                    color:
+                        offer.customerCanRedeem ==
+                                true
+                            ? const Color(
+                                0xFF10B981,
+                              )
+                            : const Color(
+                                0xFFEF4444,
+                              ),
+                    fontWeight:
+                        FontWeight.w500,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    ),
+  ),
+],
+
                         ],
                       ),
                     ),
@@ -311,10 +455,15 @@ class _BilldialogState extends State<Billdialog> {
                               __.billSummary?.coupon != null) ...[
                             SizedBox(height: 8.h),
                             _SummaryRow(
-                              "Loyalty discount",
-                              "-\$${__.billSummary?.loyalityPointDiscountAmount ?? '0'}",
-                              isDiscount: true,
-                            ),
+  "Loyalty discount",
+  "-\$${__.billSummary?.applicableLoyaltyOffers
+          ?.firstWhere(
+            (e) => e.id == __.selectedLoyaltyOfferId,
+            orElse: () => ApplicableLoyaltyOffers(),
+          )
+          .redeemAmount ?? 0}",
+  isDiscount: true,
+),
                           ],
 
                           Padding(

@@ -11,6 +11,7 @@ class SearchDropdownField<T> extends StatefulWidget {
   final Future<List<T>> Function(String query) onSearch;
   final String Function(T item) displayText;
   final Function(T value)? onSelected;
+  final Function(String value)? onChanged;
 
   const SearchDropdownField({
     Key? key,
@@ -19,7 +20,9 @@ class SearchDropdownField<T> extends StatefulWidget {
     required this.displayText,
     this.prefixIcon,
     this.onSelected,
-    this.controller, // 👈 NEW
+    this.controller,
+    this.onChanged,
+    
   }) : super(key: key);
 
   @override
@@ -117,7 +120,11 @@ class _SearchDropdownFieldState<T> extends State<SearchDropdownField<T>> {
           ),
           child: TextField(
             controller: _controller,
-            onChanged: _onSearchChanged,
+         onChanged: (value) {
+  _onSearchChanged(value);
+
+  widget.onChanged?.call(value);
+},
             decoration: InputDecoration(
               hintText: widget.hint,
               border: InputBorder.none,
