@@ -103,40 +103,38 @@ class _BilldialogState extends State<Billdialog> {
                           // Customer search
                           _Label("Customer name"),
                           SizedBox(height: 5.h),
-                         SearchDropdownField<CustomerModel>(
-  hint: "Search customer",
-  prefixIcon: Icons.person_outline,
-  controller: __.nameController,
+                          SearchDropdownField<CustomerModel>(
+                            hint: "Search customer",
+                            prefixIcon: Icons.person_outline,
+                            controller: __.nameController,
 
-  displayText: (v) => v.name ?? "No Name",
+                            displayText: (v) => v.name ?? "No Name",
 
-  /// SEARCH ONLY
-  onSearch: (q) async {
-    return await controller.fetchCustomer(q);
-  },
+                            /// SEARCH ONLY
+                            onSearch: (q) async {
+                              return await controller.fetchCustomer(q);
+                            },
 
-  /// CALL ONLY AFTER SELECTING DROPDOWN ITEM
-  onSelected: (v) async {
+                            /// CALL ONLY AFTER SELECTING DROPDOWN ITEM
+                            onSelected: (v) async {
+                              /// SET CUSTOMER DETAILS
+                              __.nameController.text = v.name ?? "";
+                              __.phoneController.text = v.phone ?? "";
+                              __.emailController.text = v.email ?? "";
 
-    /// SET CUSTOMER DETAILS
-    __.nameController.text = v.name ?? "";
-    __.phoneController.text = v.phone ?? "";
-    __.emailController.text = v.email ?? "";
+                              /// CLEAR OLD DATA
+                              __.billSummary = null;
+                              __.selectedLoyaltyOfferId = null;
+                              __.claimLoyality = false;
 
-    /// CLEAR OLD DATA
-    __.billSummary = null;
-    __.selectedLoyaltyOfferId = null;
-    __.claimLoyality = false;
+                              __.update();
 
-    __.update();
-
-    /// FETCH SESSION DETAILS
-    await __.fetchSessionDetail(
-      __.selectedSessionId ?? "",
-    );
-  },
-),
-
+                              /// FETCH SESSION DETAILS
+                              await __.fetchSessionDetail(
+                                __.selectedSessionId ?? "",
+                              );
+                            },
+                          ),
 
                           SizedBox(height: 10.h),
 
@@ -169,185 +167,210 @@ class _BilldialogState extends State<Billdialog> {
                           ),
                           SizedBox(height: 12.h),
 
-                         // Applicable Loyalty Offers
-if ( __.billSummary?.applicableLoyaltyOffers != null &&
-    __.billSummary!.applicableLoyaltyOffers!.isNotEmpty) ...[
-      
-  _Label("Available loyalty offers"),
-  SizedBox(height: 8.h),
-
-  Expanded(
-    child: ListView.separated(
-      shrinkWrap: true,
-      itemCount:
-          __.billSummary!.applicableLoyaltyOffers!.length,
-      separatorBuilder: (_, ____) =>
-          SizedBox(height: 8.h),
-      itemBuilder: (context, index) {
-        final offer =
-            __.billSummary!
-                .applicableLoyaltyOffers![index];
-
-        final bool isSelected =
-            __.selectedLoyaltyOfferId == offer.id;
-
-        return GestureDetector(
-          onTap: () {
-            __.selectedLoyaltyOfferId =
-                isSelected ? null : offer.id;
-
-            __.claimLoyality = !isSelected;
-
-            __.update();
-
-            __.fetchSessionDetail(
-              __.selectedSessionId ?? "",
-            );
-          },
-
-          child: AnimatedContainer(
-            duration: const Duration(milliseconds: 200),
-
-            padding: EdgeInsets.all(10.w),
-
-            decoration: BoxDecoration(
-              color: isSelected
-                  ? const Color(0xFFEFF6FF)
-                  : Colors.white,
-
-              borderRadius:
-                  BorderRadius.circular(10.r),
-
-              border: Border.all(
-                color: isSelected
-                    ? const Color(0xFF2F80ED)
-                    : const Color(0xFFE2E8F0),
-              ),
-            ),
-
-            child: Column(
-              crossAxisAlignment:
-                  CrossAxisAlignment.start,
-              children: [
-                Row(
-                  children: [
-                    Expanded(
-                      child: Text(
-                        offer.name ?? "",
-                        style: TextStyle(
-                          fontSize: 12.sp,
-                          fontWeight: FontWeight.w700,
-                          color:
-                              const Color(0xFF0F172A),
-                        ),
-                      ),
-                    ),
-
-                    Icon(
-                      isSelected
-                          ? Icons.check_circle
-                          : Icons.circle_outlined,
-                      size: 18.sp,
-                      color: isSelected
-                          ? const Color(0xFF2F80ED)
-                          : const Color(0xFFCBD5E1),
-                    ),
-                  ],
-                ),
-
-                SizedBox(height: 6.h),
-
-                Row(
-                  children: [
-                    Container(
-                      padding: EdgeInsets.symmetric(
-                        horizontal: 7.w,
-                        vertical: 3.h,
-                      ),
-
-                      decoration: BoxDecoration(
-                        color:
-                            const Color(0xFFF1F5F9),
-                        borderRadius:
-                            BorderRadius.circular(
-                              5.r,
-                            ),
-                      ),
-
-                      child: Text(
-                        "${offer.pointsRequired ?? 0} pts",
-                        style: TextStyle(
-                          fontSize: 10.sp,
-                          fontWeight:
-                              FontWeight.w600,
-                          color:
-                              const Color(0xFF475569),
-                        ),
-                      ),
-                    ),
-
-                    SizedBox(width: 6.w),
-
-                    Container(
-                      padding: EdgeInsets.symmetric(
-                        horizontal: 7.w,
-                        vertical: 3.h,
-                      ),
-
-                      decoration: BoxDecoration(
-                        color:
-                            const Color(0xFFECFDF5),
-                        borderRadius:
-                            BorderRadius.circular(
-                              5.r,
-                            ),
-                      ),
-
-                      child: Text(
-                        "₹${offer.redeemAmount ?? 0} OFF",
-                        style: TextStyle(
-                          fontSize: 10.sp,
-                          fontWeight:
-                              FontWeight.w700,
-                          color:
-                              const Color(0xFF10B981),
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-
-                SizedBox(height: 6.h),
-
-                Text(
-                  offer.customerCanRedeem == true
-                      ? "Eligible • Wallet: ${offer.customerWallet}"
-                      : "Need ${offer.pointsShortfall} more points",
-
-                  style: TextStyle(
-                    fontSize: 10.sp,
-                    color:
-                        offer.customerCanRedeem ==
-                                true
-                            ? const Color(
-                                0xFF10B981,
-                              )
-                            : const Color(
-                                0xFFEF4444,
+                          // Applicable Loyalty Offers
+                          if (__.billSummary?.applicableLoyaltyOffers != null &&
+                              __
+                                  .billSummary!
+                                  .applicableLoyaltyOffers!
+                                  .isNotEmpty) ...[
+                            _Label("Available loyalty offers"),
+                            SizedBox(height: 8.h),
+                            if (__
+                                    .billSummary
+                                    ?.applicableLoyaltyOffers
+                                    ?.isNotEmpty ??
+                                false)
+                              Container(
+                                width: double.infinity,
+                                padding: EdgeInsets.all(12.w),
+                                margin: EdgeInsets.only(bottom: 10.h),
+                                decoration: BoxDecoration(
+                                  color: const Color(0xFFECFDF5),
+                                  borderRadius: BorderRadius.circular(10.r),
+                                  border: Border.all(
+                                    color: const Color(
+                                      0xFF10B981,
+                                    ).withOpacity(.2),
+                                  ),
+                                ),
+                                child: Row(
+                                  children: [
+                                    Icon(
+                                      Icons.account_balance_wallet_outlined,
+                                      color: const Color(0xFF10B981),
+                                      size: 18.sp,
+                                    ),
+                                    SizedBox(width: 8.w),
+                                    Text(
+                                      "Wallet Points: ${__.billSummary!.applicableLoyaltyOffers!.first.customerWallet ?? 0}",
+                                      style: TextStyle(
+                                        fontSize: 12.sp,
+                                        fontWeight: FontWeight.w600,
+                                        color: const Color(0xFF065F46),
+                                      ),
+                                    ),
+                                  ],
+                                ),
                               ),
-                    fontWeight:
-                        FontWeight.w500,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        );
-      },
-    ),
-  ),
-],
 
+                            Expanded(
+                              child: ListView.separated(
+                                shrinkWrap: true,
+                                itemCount: __
+                                    .billSummary!
+                                    .applicableLoyaltyOffers!
+                                    .length,
+                                separatorBuilder: (_, ____) =>
+                                    SizedBox(height: 8.h),
+                                itemBuilder: (context, index) {
+                                  final offer = __
+                                      .billSummary!
+                                      .applicableLoyaltyOffers![index];
+
+                                  final bool isSelected =
+                                      __.selectedLoyaltyOfferId == offer.id;
+
+                                  return GestureDetector(
+                                    onTap: () {
+                                      __.selectedLoyaltyOfferId = isSelected
+                                          ? null
+                                          : offer.id;
+
+                                      __.claimLoyality = !isSelected;
+
+                                      __.update();
+
+                                      __.fetchSessionDetail(
+                                        __.selectedSessionId ?? "",
+                                      );
+                                    },
+
+                                    child: AnimatedContainer(
+                                      duration: const Duration(
+                                        milliseconds: 200,
+                                      ),
+                                      padding: EdgeInsets.symmetric(
+                                        horizontal: 8.w,
+                                        vertical: 7.h,
+                                      ),
+                                      decoration: BoxDecoration(
+                                        color: isSelected
+                                            ? const Color(0xFFF8FBFF)
+                                            : Colors.white,
+                                        borderRadius: BorderRadius.circular(
+                                          10.r,
+                                        ),
+                                        border: Border.all(
+                                          color: isSelected
+                                              ? const Color(0xFF2F80ED)
+                                              : const Color(0xFFE5E7EB),
+                                          width: 1,
+                                        ),
+                                      ),
+                                      child: Row(
+                                        children: [
+                                          Container(
+                                            width: 32.w,
+                                            height: 32.w,
+                                            decoration: BoxDecoration(
+                                              color: const Color(0xFFECFDF5),
+                                              borderRadius:
+                                                  BorderRadius.circular(8.r),
+                                            ),
+                                            child: Icon(
+                                              Icons.local_offer_outlined,
+                                              color: const Color(0xFF10B981),
+                                              size: 16.sp,
+                                            ),
+                                          ),
+
+                                          SizedBox(width: 8.w),
+
+                                          Expanded(
+                                            child: Column(
+                                              crossAxisAlignment:
+                                                  CrossAxisAlignment.start,
+                                              mainAxisSize: MainAxisSize.min,
+                                              children: [
+                                                Text(
+                                                  offer.name ?? "",
+                                                  maxLines: 1,
+                                                  overflow:
+                                                      TextOverflow.ellipsis,
+                                                  style: TextStyle(
+                                                    fontSize: 10.sp,
+                                                    fontWeight: FontWeight.w600,
+                                                    color: const Color(
+                                                      0xFF111827,
+                                                    ),
+                                                  ),
+                                                ),
+
+                                                SizedBox(height: 2.h),
+
+                                                Text(
+                                                  "${offer.pointsRequired ?? 0} points",
+                                                  style: TextStyle(
+                                                    fontSize: 8.sp,
+                                                    color: const Color(
+                                                      0xFF6B7280,
+                                                    ),
+                                                  ),
+                                                ),
+                                              ],
+                                            ),
+                                          ),
+
+                                          SizedBox(width: 6.w),
+
+                                          Column(
+                                            mainAxisSize: MainAxisSize.min,
+                                            crossAxisAlignment:
+                                                CrossAxisAlignment.end,
+                                            children: [
+                                              Text(
+                                                "₹${offer.redeemAmount ?? 0}",
+                                                style: TextStyle(
+                                                  fontSize: 12.sp,
+                                                  fontWeight: FontWeight.w700,
+                                                  color: const Color(
+                                                    0xFF10B981,
+                                                  ),
+                                                ),
+                                              ),
+                                              Text(
+                                                "OFF",
+                                                style: TextStyle(
+                                                  fontSize: 7.sp,
+                                                  fontWeight: FontWeight.w600,
+                                                  color: const Color(
+                                                    0xFF10B981,
+                                                  ),
+                                                ),
+                                              ),
+                                            ],
+                                          ),
+
+                                          SizedBox(width: 6.w),
+
+                                          Icon(
+                                            isSelected
+                                                ? Icons.check_circle_rounded
+                                                : Icons
+                                                      .radio_button_unchecked_rounded,
+                                            size: 17.sp,
+                                            color: isSelected
+                                                ? const Color(0xFF2F80ED)
+                                                : const Color(0xFFD1D5DB),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                  );
+                                },
+                              ),
+                            ),
+                          ],
                         ],
                       ),
                     ),
@@ -455,15 +478,10 @@ if ( __.billSummary?.applicableLoyaltyOffers != null &&
                               __.billSummary?.coupon != null) ...[
                             SizedBox(height: 8.h),
                             _SummaryRow(
-  "Loyalty discount",
-  "-\$${__.billSummary?.applicableLoyaltyOffers
-          ?.firstWhere(
-            (e) => e.id == __.selectedLoyaltyOfferId,
-            orElse: () => ApplicableLoyaltyOffers(),
-          )
-          .redeemAmount ?? 0}",
-  isDiscount: true,
-),
+                              "Loyalty discount",
+                              "-\$${__.billSummary?.applicableLoyaltyOffers?.firstWhere((e) => e.id == __.selectedLoyaltyOfferId, orElse: () => ApplicableLoyaltyOffers()).redeemAmount ?? 0}",
+                              isDiscount: true,
+                            ),
                           ],
 
                           Padding(
