@@ -1,5 +1,3 @@
-import 'dart:developer';
-
 import 'package:animate_do/animate_do.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
@@ -18,10 +16,13 @@ class BillSummaryView extends StatelessWidget {
   Widget build(BuildContext context) {
     return GetBuilder<DashboardController>(
       builder: (controller) {
-        if (controller.biller.selectedTable == null)
+        if (controller.biller.selectedTable == null &&
+            !controller.biller.isCustomerOrder &&
+            !controller.isOnlineOrderSelected) {
           return const SizedBox.shrink();
+        }
 
-        final TableData table = controller.biller.selectedTable!;
+        final TableData? table = controller.biller.selectedTable;
         final bool hasOrdered =
             controller.biller.billSummary?.items?.isNotEmpty == true;
 
@@ -33,7 +34,6 @@ class BillSummaryView extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // ── Header ─────────────────────────────────────
                 Container(
                   padding: EdgeInsets.fromLTRB(12.w, 10.h, 12.w, 10.h),
                   decoration: const BoxDecoration(
@@ -44,7 +44,6 @@ class BillSummaryView extends StatelessWidget {
                   child: Row(
                     crossAxisAlignment: CrossAxisAlignment.center,
                     children: [
-                      // ── Table avatar ──────────────────────────────
                       Container(
                         width: 34.w,
                         height: 34.w,
@@ -54,7 +53,16 @@ class BillSummaryView extends StatelessWidget {
                         ),
                         alignment: Alignment.center,
                         child: Text(
-                          controller.biller.getTableName(table.name),
+                          controller.isOnlineOrderSelected
+                              ? controller.selectedOnlinePlatform
+                                    .substring(0, 2)
+                                    .toUpperCase()
+                              : controller.biller.isCustomerOrder
+                              ? "CO"
+                              : controller.biller.getTableName(
+                                  table?.name ?? "",
+                                ),
+
                           style: TextStyle(
                             color: Colors.white,
                             fontSize: 11.sp,
@@ -63,35 +71,49 @@ class BillSummaryView extends StatelessWidget {
                         ),
                       ),
                       SizedBox(width: 9.w),
-
-                      // ── Table name + session switcher ─────────────
                       Expanded(
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
-                              table.name,
+                              controller.isOnlineOrderSelected
+                                  ? (controller
+                                            .selectedOnlineOrder
+                                            ?.customerName ??
+                                        "Online Order")
+                                  : controller.biller.isCustomerOrder
+                                  ? (controller
+                                                .biller
+                                                .selectedSession
+                                                ?.customerName
+                                                ?.isNotEmpty ==
+                                            true
+                                        ? controller
+                                              .biller
+                                              .selectedSession!
+                                              .customerName!
+                                        : "Customer Order")
+                                  : table?.name ?? "",
                               style: TextStyle(
                                 fontSize: 13.sp,
                                 fontWeight: FontWeight.w700,
                                 color: const Color(0xFF0F172A),
-                                letterSpacing: -0.2,
                               ),
                             ),
                             SizedBox(height: 2.h),
-                            SessionSwitchView(),
+                            controller.isOnlineOrderSelected
+                                ? _OnlineOrderNavigator(controller)
+                                : SessionSwitchView(),
                           ],
                         ),
                       ),
 
                       SizedBox(width: 6.w),
 
-                      // ── Action buttons stacked vertically ─────────
                       Column(
                         crossAxisAlignment: CrossAxisAlignment.end,
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          // New bill button
                           GestureDetector(
                             onTap: () {
                               controller.biller.selectedSession = null;
@@ -218,9 +240,14 @@ class BillSummaryView extends StatelessWidget {
                           if (controller.biller.selectedSessionId == null ||
                               controller.biller.selectedSessionId == "") {
                             controller.biller.startSession(
-                              tableID: controller.biller.selectedTable!.id!,
+                              tableID: controller.biller.selectedTable?.id,
                               guestCount:
-                                  controller.biller.selectedTable!.seatCount,
+                                  controller.biller.selectedTable?.seatCount,
+                              customerName: controller
+                                  .biller
+                                  .nameController
+                                  .text
+                                  .trim(),
                             );
                           } else {
                             controller.biller.startBatch();
@@ -237,19 +264,14 @@ class BillSummaryView extends StatelessWidget {
                     color: const Color(0xFFE2E8F0),
                   ),
 
-                // ── Scrollable middle area ──────────────────────
-                // Uses LayoutBuilder to measure available space between
-                // the header/kitchen-btn area and the totals/checkout footer.
                 Expanded(
                   child: LayoutBuilder(
                     builder: (context, constraints) {
                       final double totalH = constraints.maxHeight;
 
                       return hasOrdered
-                          // ── Two sections: new order (max 3/4) + ordered ──
                           ? Column(
                               children: [
-                                // New order — capped at 3/4 of available height
                                 if (controller
                                     .biller
                                     .newBatchItems
@@ -466,7 +488,6 @@ class BillSummaryView extends StatelessWidget {
                   ),
                 ),
 
-                // ── Bill Totals ─────────────────────────────────
                 Container(
                   padding: EdgeInsets.fromLTRB(12.w, 10.h, 12.w, 10.h),
                   decoration: const BoxDecoration(
@@ -507,7 +528,11 @@ class BillSummaryView extends StatelessWidget {
                   padding: EdgeInsets.fromLTRB(12.w, 0, 12.w, 12.h),
                   child: GestureDetector(
                     onTap: () {
-                      if (controller.biller.billSummary != null)
+                      final customerName =
+                          controller.biller.selectedSession?.customerName ??
+                          controller.biller.nameController.text;
+
+                      if (controller.biller.billSummary != null) {
                         Get.dialog(
                           Material(
                             color: Colors.transparent,
@@ -518,13 +543,26 @@ class BillSummaryView extends StatelessWidget {
                                   maxHeight: 500.h,
                                 ),
                                 margin: const EdgeInsets.all(24),
-                                child: Billdialog(),
+                                child: Billdialog(
+                                  customerName:
+                                      controller.biller.isCustomerOrder
+                                      ? (controller
+                                                .biller
+                                                .selectedSession
+                                                ?.customerName ??
+                                            controller
+                                                .biller
+                                                .nameController
+                                                .text)
+                                      : "",
+                                ),
                               ),
                             ),
                           ),
                           barrierDismissible: true,
                           barrierColor: Colors.black54,
                         );
+                      }
                     },
                     child: Container(
                       height: 40.h,
@@ -564,7 +602,6 @@ class BillSummaryView extends StatelessWidget {
   }
 }
 
-// ── All helper widgets unchanged ──────────────────────────────────────────────
 class _KitchenBtn extends StatelessWidget {
   final VoidCallback onTap;
   const _KitchenBtn({required this.onTap});
@@ -837,6 +874,65 @@ class _TotalRow extends StatelessWidget {
           ),
         ),
       ],
+    );
+  }
+}
+
+class _OnlineOrderNavigator extends StatelessWidget {
+  final DashboardController controller;
+
+  const _OnlineOrderNavigator(this.controller);
+
+  @override
+  Widget build(BuildContext context) {
+    final order = controller.selectedOnlineOrder;
+    if (order == null) {
+      return Text(
+        "No Orders",
+        style: TextStyle(fontSize: 10.sp, color: Colors.grey),
+      );
+    }
+
+    return Container(
+      margin: EdgeInsets.only(top: 4.h),
+      padding: EdgeInsets.symmetric(horizontal: 6.w, vertical: 4.h),
+      decoration: BoxDecoration(
+        color: const Color(0xFFF8FAFC),
+        borderRadius: BorderRadius.circular(6.r),
+      ),
+      child: Row(
+        children: [
+          GestureDetector(
+            onTap: controller.previousOnlineOrder,
+            child: Icon(Icons.chevron_left, size: 16.sp, color: Colors.blue),
+          ),
+
+          Expanded(
+            child: Column(
+              children: [
+                Text(
+                  " ${order.sessionNumber ?? '--'}",
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    fontSize: 12.sp,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+
+                Text(
+                  "${controller.selectedOnlineOrderIndex + 1}/${controller.onlineSessions.length}",
+                  style: TextStyle(fontSize: 9.sp, color: Colors.grey),
+                ),
+              ],
+            ),
+          ),
+
+          GestureDetector(
+            onTap: controller.nextOnlineOrder,
+            child: Icon(Icons.chevron_right, size: 16.sp, color: Colors.blue),
+          ),
+        ],
+      ),
     );
   }
 }

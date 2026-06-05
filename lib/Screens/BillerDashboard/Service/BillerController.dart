@@ -1,10 +1,10 @@
 import 'dart:convert';
+import 'dart:developer';
 import 'package:flutter/widgets.dart';
 import 'package:get/instance_manager.dart';
 import 'package:get/state_manager.dart';
 import 'package:http/http.dart';
 import 'package:toasttab/Screens/BillerDashboard/Models/Request/BatchItemRequest.dart';
-import 'package:toasttab/Screens/BillerDashboard/Models/Response/CustomerModel.dart';
 import 'package:toasttab/Screens/BillerDashboard/Models/Response/MenuModel.dart';
 import 'package:toasttab/Screens/BillerDashboard/Models/Response/Ordersession.dart';
 import 'package:toasttab/Screens/BillerDashboard/Models/Response/SessionModel.dart';
@@ -27,91 +27,77 @@ class BillerController extends GetxController {
   TextEditingController phoneController = TextEditingController();
   bool claimLoyality = false;
   String? selectedLoyaltyOfferId;
+  bool isCustomerOrder = false;
+  String customerName = "";
 
-  fetchSessionDetail(String sessionId) async {
-    String parms = "";
-    if (nameController.text.isNotEmpty) {
-      parms = parms + "customerName=${nameController.text.trim()}&";
-    }
-    if (phoneController.text.isNotEmpty) {
-      parms = parms + "customerPhone=${phoneController.text.trim()}&";
-    }
-    if (emailController.text.isNotEmpty) {
-      parms = parms + "customerEmail=${emailController.text.trim()}&";
-    }
-
-    if (claimLoyality) {
-      parms = parms + "claimedLoyalityPoints=true&";
-    }
-    if (selectedLoyaltyOfferId != null) {
-      parms += "loyalityOfferId=$selectedLoyaltyOfferId&";
-    }
-
-    final url =
-        "$baseUrl/orders/restaurants/${restaurantId}/sessions/${sessionId}/bill/preview?$parms";
-
-    final response = await get(
-      Uri.parse(url),
-
-      headers: {
-        "Content-Type": "application/json",
-        "Authorization": "Bearer $authToken",
-      },
-    );
-
-    billSummary = null;
-    update();
-
-    if (response.statusCode == 200) {
-      final decodedData = json.decode(response.body);
-
-      billSummary = BillSummaryModel.fromJson(
-        json.decode(response.body)["data"],
-      );
-      if (billSummary != null) {
-        subTotalAmount = billSummary!.subtotal ?? "0";
-        taxAmount = billSummary!.taxAmount ?? "0";
-        totalAmount = billSummary!.totalAmount ?? "0";
-        nameController.text = billSummary!.session!.customerName ?? "";
-        phoneController.text = billSummary!.session!.customerPhone ?? "";
-      } else {
-        subTotalAmount = "0";
-        taxAmount = "0";
-        totalAmount = '0';
-        emailController.text = "";
-        nameController.text = "";
-        phoneController.text = "";
-      }
-      update();
-    } else {}
-  }
-
-  checkoutBill(String sessionId) async {
+  Future<void> fetchSessionDetail(String sessionId) async {
     try {
       String parms = "";
 
       if (nameController.text.isNotEmpty) {
-        parms +=
-            "customerName=${Uri.encodeComponent(nameController.text.trim())}&";
+        parms += "customerName=${nameController.text.trim()}&";
       }
 
       if (phoneController.text.isNotEmpty) {
-        parms +=
-            "customerPhone=${Uri.encodeComponent(phoneController.text.trim())}&";
+        parms += "customerPhone=${phoneController.text.trim()}&";
       }
 
       if (emailController.text.isNotEmpty) {
-        parms +=
-            "customerEmail=${Uri.encodeComponent(emailController.text.trim())}&";
-      }
-      if (selectedLoyaltyOfferId != null) {
-        parms += "loyaltyOfferId=${selectedLoyaltyOfferId!}&";
+        parms += "customerEmail=${emailController.text.trim()}&";
       }
 
       if (claimLoyality) {
         parms += "claimedLoyalityPoints=true&";
       }
 
+      if (selectedLoyaltyOfferId != null) {
+        parms += "loyalityOfferId=$selectedLoyaltyOfferId&";
+      }
+
+      final url =
+          "$baseUrl/orders/restaurants/$restaurantId/sessions/$sessionId/bill/preview?$parms";
+      final response = await get(
+        Uri.parse(url),
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": "Bearer $authToken",
+        },
+      );
+
+      billSummary = null;
+      update();
+
+      if (response.statusCode == 200) {
+        final decoded = json.decode(response.body);
+        billSummary = BillSummaryModel.fromJson(decoded["data"]);
+
+        log("BILL SUMMARY LOADED => ${billSummary != null}");
+
+        if (billSummary != null) {
+          subTotalAmount = billSummary!.subtotal ?? "0";
+          taxAmount = billSummary!.taxAmount ?? "0";
+          totalAmount = billSummary!.totalAmount ?? "0";
+
+          nameController.text = billSummary?.session?.customerName ?? "";
+
+          phoneController.text = billSummary?.session?.customerPhone ?? "";
+        } else {
+          subTotalAmount = "0";
+          taxAmount = "0";
+          totalAmount = "0";
+
+          emailController.clear();
+          nameController.clear();
+          phoneController.clear();
+        }
+
+        update();
+      } else {}
+    } catch (e, stack) {}
+  }
+
+  checkoutBill(String sessionId) async {
+    try {
       final url =
           "$baseUrl/orders/restaurants/$restaurantId/sessions/$selectedSessionId/bill/";
 
@@ -125,7 +111,7 @@ class BillerController extends GetxController {
         if (emailController.text.isNotEmpty)
           "customerEmail": emailController.text.trim(),
 
-        "guestCount": selectedTable!.seatCount,
+        if (selectedTable != null) "guestCount": selectedTable?.seatCount,
       };
 
       final response = await post(
@@ -155,14 +141,19 @@ class BillerController extends GetxController {
         await ctrl.fetchTables();
 
         update();
-      } else {}
+      } else {
+        debugPrint("Checkout failed");
+      }
     } catch (e, stackTrace) {}
   }
 
   selectTable(TableData table, List<SessionModel> sessions) {
     DashboardController dbCtrl = Get.find();
+
     newBatchItems.clear();
     selectedTable = table;
+    isCustomerOrder = false;
+
     billSummary = null;
 
     subTotalAmount = "0";
@@ -181,15 +172,13 @@ class BillerController extends GetxController {
       selectedSessionId = null;
       update();
     }
+    dbCtrl.selectedOnlinePlatform = "";
+    dbCtrl.selectedOnlineOrderIndex = 0;
     dbCtrl.update();
     update();
   }
 
   addToBatch(MenuModel menu) {
-    if (selectedTable == null) {
-      return;
-    }
-
     if (newBatchItems.where((it) => it.menuItemId == menu.id).isEmpty) {
       newBatchItems.add(
         BatchItemModel(menuItemId: menu.id, quantity: 1, notes: ""),
@@ -218,33 +207,41 @@ class BillerController extends GetxController {
     update();
   }
 
-  startSession({required String tableID, int? guestCount}) async {
-    final response = await post(
-      Uri.parse(baseUrl + "/orders/restaurants/${restaurantId}/sessions"),
+  startSession({String? tableID, int? guestCount, String? customerName}) async {
+    final body = {
+      "channel": "DINE_IN",
+      if (tableID != null) "tableId": tableID,
+      if (guestCount != null) "guestCount": guestCount,
+      if (customerName != null && customerName.isNotEmpty)
+        "customerName": customerName,
+    };
 
+    final url = "$baseUrl/orders/restaurants/$restaurantId/sessions";
+
+    Uri.parse("$baseUrl/orders/restaurants/$restaurantId/sessions");
+
+    final response = await post(
+      Uri.parse(url),
       headers: {
         "Content-Type": "application/json",
         "Authorization": "Bearer $authToken",
       },
-      body: json.encode({
-        "tableId": tableID,
-        "channel": "DINE_IN",
-        if (guestCount != null) "guestCount": guestCount,
-      }),
+      body: json.encode(body),
     );
-    if (response.statusCode == 201 || response.statusCode == 200) {
+    if (response.statusCode == 200 || response.statusCode == 201) {
       DashboardController dashController = Get.find();
+
       selectedSession = SessionModel.fromJson(
         json.decode(response.body)["data"],
       );
+
+      selectedSessionId = selectedSession!.id;
+
       dashController.sessions.add(selectedSession!);
-      selectedSessionId = selectedSession!.id!;
       dashController.fetchAllPendingSession();
       dashController.fetchTables();
-      startBatch();
-      dashController.update();
-    } else {
-      print(response.body);
+
+      update();
     }
   }
 
@@ -334,6 +331,7 @@ class BillerController extends GetxController {
       nameController.clear();
       phoneController.clear();
       emailController.clear();
+      fetchSessionDetail(sessionId);
 
       final DashboardController ctrl = Get.find();
       ctrl.fetchAllPendingSession();

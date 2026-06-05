@@ -10,7 +10,8 @@ import 'package:toasttab/Screens/BillerDashboard/Views/Printers/PrinterSettingsD
 import 'package:toasttab/Utils/SearchTextField.dart';
 
 class Billdialog extends StatefulWidget {
-  const Billdialog({super.key});
+  final String customerName;
+  const Billdialog({super.key,required this.customerName,});
 
   @override
   State<Billdialog> createState() => _BilldialogState();
@@ -19,6 +20,16 @@ class Billdialog extends StatefulWidget {
 class _BilldialogState extends State<Billdialog> {
   final DashboardController controller = Get.find();
   final PrinterController printerCtrl = Get.find();
+
+  @override
+void initState() {
+  super.initState();
+
+  if (widget.customerName.isNotEmpty &&
+      controller.biller.nameController.text.isEmpty) {
+    controller.biller.nameController.text = widget.customerName;
+  }
+}
 
   @override
   Widget build(BuildContext context) {
@@ -102,40 +113,36 @@ class _BilldialogState extends State<Billdialog> {
 
                           // Customer search
                           _Label("Customer name"),
-                          SizedBox(height: 5.h),
-                          SearchDropdownField<CustomerModel>(
-                            hint: "Search customer",
-                            prefixIcon: Icons.person_outline,
-                            controller: __.nameController,
+SizedBox(height: 5.h),
 
-                            displayText: (v) => v.name ?? "No Name",
+SearchDropdownField<CustomerModel>(
+  hint: "Search customer",
+  prefixIcon: Icons.person_outline,
+  controller: __.nameController,
 
-                            /// SEARCH ONLY
-                            onSearch: (q) async {
-                              return await controller.fetchCustomer(q);
-                            },
+  displayText: (v) => v.name ?? "No Name",
 
-                            /// CALL ONLY AFTER SELECTING DROPDOWN ITEM
-                            onSelected: (v) async {
-                              /// SET CUSTOMER DETAILS
-                              __.nameController.text = v.name ?? "";
-                              __.phoneController.text = v.phone ?? "";
-                              __.emailController.text = v.email ?? "";
+  onSearch: (q) async {
+    return await controller.fetchCustomer(q);
+  },
 
-                              /// CLEAR OLD DATA
-                              __.billSummary = null;
-                              __.selectedLoyaltyOfferId = null;
-                              __.claimLoyality = false;
+  onSelected: (v) async {
+    __.nameController.text = v.name ?? "";
+    __.phoneController.text = v.phone ?? "";
+    __.emailController.text = v.email ?? "";
 
-                              __.update();
+    __.billSummary = null;
+    __.selectedLoyaltyOfferId = null;
+    __.claimLoyality = false;
 
-                              /// FETCH SESSION DETAILS
-                              await __.fetchSessionDetail(
-                                __.selectedSessionId ?? "",
-                              );
-                            },
-                          ),
+    __.update();
 
+    await __.fetchSessionDetail(
+      __.selectedSessionId ?? "",
+    );
+  },
+),
+     
                           SizedBox(height: 10.h),
 
                           Row(

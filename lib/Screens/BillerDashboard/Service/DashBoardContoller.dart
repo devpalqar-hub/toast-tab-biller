@@ -9,6 +9,7 @@ import 'package:toasttab/Screens/AuthenticationScreen/AuthenticationScreen.dart'
 import 'package:toasttab/Screens/BillerDashboard/Models/Request/BatchItemRequest.dart';
 import 'package:toasttab/Screens/BillerDashboard/Models/Response/CustomerModel.dart';
 import 'package:toasttab/Screens/BillerDashboard/Models/Response/MenuModel.dart';
+import 'package:toasttab/Screens/BillerDashboard/Models/Response/OnlineSessionModel.dart';
 import 'package:toasttab/Screens/BillerDashboard/Models/Response/Ordersession.dart';
 import 'package:toasttab/Screens/BillerDashboard/Models/Response/SessionModel.dart';
 import 'package:toasttab/Screens/BillerDashboard/Models/Response/TableModel.dart';
@@ -25,6 +26,18 @@ class DashboardController extends GetxController {
   Category? selectedCategory;
   UserModel? userModel;
   BillerController biller = Get.put(BillerController());
+  bool newSelected = true;
+  bool onlineSelected = false;
+  bool otherSelected = false;
+
+  List<OnlineSession> onlineSessions = [];
+
+  bool isLoadingOnlineOrders = false;
+  String selectedOnlinePlatform = "";
+  bool showOnlineOrders = false;
+
+  bool get isOnlineOrderSelected =>
+      selectedOnlinePlatform.isNotEmpty && onlineSessions.isNotEmpty;
 
   void showToast(String message, {bool isError = false}) {
     Fluttertoast.showToast(
@@ -34,6 +47,154 @@ class DashboardController extends GetxController {
       backgroundColor: isError ? Colors.red : Colors.green,
       textColor: Colors.white,
     );
+  }
+
+  void toggleOnlineOrders() {
+    showOnlineOrders = !showOnlineOrders;
+    update();
+  }
+
+  Future<void> selectPlatform(String platform) async {
+    selectedOnlinePlatform = platform;
+    biller.selectedTable = null;
+    biller.isCustomerOrder = false;
+
+    await fetchOnlineOrders(platform);
+
+    update();
+  }
+
+  int selectedOnlineOrderIndex = 0;
+  OnlineSession? get selectedOnlineOrder {
+    if (onlineSessions.isEmpty) return null;
+
+    if (selectedOnlineOrderIndex >= onlineSessions.length) {
+      selectedOnlineOrderIndex = 0;
+    }
+
+    return onlineSessions[selectedOnlineOrderIndex];
+  }
+
+  void nextOnlineOrder() {
+    if (onlineSessions.isEmpty) return;
+
+    selectedOnlineOrderIndex =
+        (selectedOnlineOrderIndex + 1) % onlineSessions.length;
+
+    loadSelectedOnlineOrder();
+  }
+
+  void previousOnlineOrder() {
+    if (onlineSessions.isEmpty) return;
+
+    selectedOnlineOrderIndex =
+        (selectedOnlineOrderIndex - 1 + onlineSessions.length) %
+        onlineSessions.length;
+
+    loadSelectedOnlineOrder();
+  }
+
+  Future<void> loadSelectedOnlineOrder() async {
+    try {
+      log("========== LOAD SELECTED ONLINE ORDER ==========");
+
+      final order = selectedOnlineOrder;
+
+      log("SELECTED INDEX => $selectedOnlineOrderIndex");
+      log("TOTAL ONLINE ORDERS => ${onlineSessions.length}");
+
+      if (order == null) {
+        log("ORDER IS NULL");
+        return;
+      }
+
+      log("ORDER ID => ${order.id}");
+      log("SESSION NUMBER => ${order.sessionNumber}");
+      log("CUSTOMER NAME => ${order.customerName}");
+      log("CHANNEL => ${order.channel}");
+      log("TOTAL AMOUNT => ${order.totalAmount}");
+
+      biller.selectedSession = SessionModel(
+        id: order.id,
+        customerName: order.customerName,
+        sessionNumber: order.sessionNumber,
+      );
+
+      biller.selectedSessionId = order.id;
+
+      log("BILLER SESSION ID => ${biller.selectedSessionId}");
+
+      log("CALLING fetchSessionDetail(${order.id})");
+
+      await biller.fetchSessionDetail(order.id!);
+
+      log("FETCH SESSION DETAIL COMPLETED");
+
+      log("SUBTOTAL => ${biller.subTotalAmount}");
+      log("TAX => ${biller.taxAmount}");
+      log("TOTAL => ${biller.totalAmount}");
+
+      log("ITEM COUNT => ${biller.billSummary?.items?.length ?? 0}");
+
+      log("===============================================");
+
+      update();
+    } catch (e, stack) {
+      log("========== LOAD ONLINE ORDER ERROR ==========");
+      log("ERROR => $e");
+      log("STACK => $stack");
+    }
+  }
+
+  Future<void> fetchOnlineOrders(String channel) async {
+    try {
+      isLoadingOnlineOrders = true;
+
+      onlineSessions.clear();
+
+      biller.billSummary = null;
+      biller.selectedSession = null;
+      biller.selectedSessionId = null;
+
+      biller.subTotalAmount = "0";
+      biller.taxAmount = "0";
+      biller.totalAmount = "0";
+
+      update();
+
+      final url =
+          "$baseUrl/orders/restaurants/$restaurantId/sessions?status=OPEN&channel=$channel";
+      final response = await http.get(
+        Uri.parse(url),
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": "Bearer $authToken",
+        },
+      );
+      final decoded = jsonDecode(response.body);
+
+      log("DECODED RESPONSE => $decoded");
+
+      if (response.statusCode == 200 && decoded["success"] == true) {
+        final model = OnlineSessionResponse.fromJson(decoded);
+        onlineSessions = model.data;
+        if (onlineSessions.isNotEmpty) {
+          selectedOnlineOrderIndex = 0;
+
+          await loadSelectedOnlineOrder();
+        }
+      } else {
+        showToast(decoded["message"] ?? "Failed to load orders", isError: true);
+      }
+    } catch (e, stack) {
+      showToast("Unable to fetch online orders", isError: true);
+    } finally {
+      isLoadingOnlineOrders = false;
+
+      log("FINAL ONLINE SESSION COUNT => ${onlineSessions.length}");
+
+      update();
+    }
   }
 
   getUserProfile() async {
@@ -57,9 +218,6 @@ class DashboardController extends GetxController {
   }
 
   Future<void> fetchTables() async {
-    // isLoading = true;
-    // update();
-
     final response = await http.get(
       Uri.parse("$baseUrl/restaurants/$restaurantId/tables"),
       headers: {

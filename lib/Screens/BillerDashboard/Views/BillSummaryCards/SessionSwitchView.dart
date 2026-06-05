@@ -16,7 +16,7 @@ class SessionSwitchView extends StatelessWidget {
     return GetBuilder<BillerController>(
       builder: (context) {
         final filteredSessions = controller.sessions
-            .where((it) => it.tableId == controller.biller.selectedTable!.id)
+            .where((it) => it.tableId == controller.biller.selectedTable?.id)
             .toList();
         if (filteredSessions.isEmpty) return const SizedBox.shrink();
 
