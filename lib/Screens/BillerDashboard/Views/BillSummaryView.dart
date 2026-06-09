@@ -16,9 +16,19 @@ class BillSummaryView extends StatelessWidget {
   Widget build(BuildContext context) {
     return GetBuilder<DashboardController>(
       builder: (controller) {
+        final bool showOnlineEmptyState =
+            controller.isOnlineOrderSelected &&
+            controller.onlineSessions.isEmpty;
+
+        final bool showWalkInEmptyState =
+            controller.isWalkInSelected && controller.walkInSessions.isEmpty;
+
         if (controller.biller.selectedTable == null &&
             !controller.biller.isCustomerOrder &&
-            !controller.isOnlineOrderSelected) {
+            !controller.isOnlineOrderSelected &&
+            !controller.isWalkInSelected &&
+            !showOnlineEmptyState &&
+            !showWalkInEmptyState) {
           return const SizedBox.shrink();
         }
 
@@ -57,6 +67,8 @@ class BillSummaryView extends StatelessWidget {
                               ? controller.selectedOnlinePlatform
                                     .substring(0, 2)
                                     .toUpperCase()
+                              : controller.isWalkInSelected
+                              ? "WI"
                               : controller.biller.isCustomerOrder
                               ? "CO"
                               : controller.biller.getTableName(
@@ -80,19 +92,18 @@ class BillSummaryView extends StatelessWidget {
                                   ? (controller
                                             .selectedOnlineOrder
                                             ?.customerName ??
-                                        "Online Order")
+                                        "No Online Orders")
+                                  : controller.isWalkInSelected
+                                  ? (controller
+                                            .selectedWalkInSession
+                                            ?.customerName ??
+                                        "No Walk-In Customers")
                                   : controller.biller.isCustomerOrder
                                   ? (controller
-                                                .biller
-                                                .selectedSession
-                                                ?.customerName
-                                                ?.isNotEmpty ==
-                                            true
-                                        ? controller
-                                              .biller
-                                              .selectedSession!
-                                              .customerName!
-                                        : "Customer Order")
+                                            .biller
+                                            .selectedSession
+                                            ?.customerName ??
+                                        "Customer Order")
                                   : table?.name ?? "",
                               style: TextStyle(
                                 fontSize: 13.sp,
@@ -103,6 +114,8 @@ class BillSummaryView extends StatelessWidget {
                             SizedBox(height: 2.h),
                             controller.isOnlineOrderSelected
                                 ? _OnlineOrderNavigator(controller)
+                                : controller.isWalkInSelected
+                                ? _WalkInNavigator(controller)
                                 : SessionSwitchView(),
                           ],
                         ),
@@ -114,55 +127,58 @@ class BillSummaryView extends StatelessWidget {
                         crossAxisAlignment: CrossAxisAlignment.end,
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          GestureDetector(
-                            onTap: () {
-                              controller.biller.selectedSession = null;
-                              controller.biller.selectedSessionId = null;
-                              controller.biller.totalAmount = "0";
-                              controller.biller.taxAmount = "0";
-                              controller.biller.subTotalAmount = "0";
-                              controller.biller.billSummary = null;
-                              controller.biller.nameController.clear();
-                              controller.biller.phoneController.clear();
-                              controller.biller.emailController.clear();
-                              controller.biller.update();
-                              controller.update();
-                            },
-                            child: Container(
-                              padding: EdgeInsets.symmetric(
-                                horizontal: 8.w,
-                                vertical: 4.h,
-                              ),
-                              decoration: BoxDecoration(
-                                color: const Color(0xFFF0F7FF),
-                                borderRadius: BorderRadius.circular(5.r),
-                                border: Border.all(
-                                  color: const Color(
-                                    0xFF2F80ED,
-                                  ).withOpacity(0.25),
+                          if (!controller.isOnlineOrderSelected &&
+                              !controller.isWalkInSelected &&
+                              !controller.biller.isCustomerOrder)
+                            GestureDetector(
+                              onTap: () {
+                                controller.biller.selectedSession = null;
+                                controller.biller.selectedSessionId = null;
+                                controller.biller.totalAmount = "0";
+                                controller.biller.taxAmount = "0";
+                                controller.biller.subTotalAmount = "0";
+                                controller.biller.billSummary = null;
+                                controller.biller.nameController.clear();
+                                controller.biller.phoneController.clear();
+                                controller.biller.emailController.clear();
+                                controller.biller.update();
+                                controller.update();
+                              },
+                              child: Container(
+                                padding: EdgeInsets.symmetric(
+                                  horizontal: 8.w,
+                                  vertical: 4.h,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: const Color(0xFFF0F7FF),
+                                  borderRadius: BorderRadius.circular(5.r),
+                                  border: Border.all(
+                                    color: const Color(
+                                      0xFF2F80ED,
+                                    ).withOpacity(0.25),
+                                  ),
+                                ),
+                                child: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Icon(
+                                      Icons.add,
+                                      size: 11.sp,
+                                      color: const Color(0xFF2F80ED),
+                                    ),
+                                    SizedBox(width: 3.w),
+                                    Text(
+                                      "New",
+                                      style: TextStyle(
+                                        color: const Color(0xFF2F80ED),
+                                        fontSize: 10.sp,
+                                        fontWeight: FontWeight.w600,
+                                      ),
+                                    ),
+                                  ],
                                 ),
                               ),
-                              child: Row(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  Icon(
-                                    Icons.add,
-                                    size: 11.sp,
-                                    color: const Color(0xFF2F80ED),
-                                  ),
-                                  SizedBox(width: 3.w),
-                                  Text(
-                                    "New",
-                                    style: TextStyle(
-                                      color: const Color(0xFF2F80ED),
-                                      fontSize: 10.sp,
-                                      fontWeight: FontWeight.w600,
-                                    ),
-                                  ),
-                                ],
-                              ),
                             ),
-                          ),
 
                           // Cancel session button — only when session is active
                           if (controller.biller.selectedSessionId != null &&
@@ -265,57 +281,168 @@ class BillSummaryView extends StatelessWidget {
                   ),
 
                 Expanded(
-                  child: LayoutBuilder(
-                    builder: (context, constraints) {
-                      final double totalH = constraints.maxHeight;
+                  child:
+                      (controller.biller.billSummary?.items?.isEmpty ?? true) &&
+                          controller.biller.newBatchItems.isEmpty
+                      ? Center(
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Icon(
+                                Icons.receipt_long_outlined,
+                                size: 60.sp,
+                                color: const Color(0xFFCBD5E1),
+                              ),
+                              SizedBox(height: 12.h),
+                              Text(
+                                "No Orders Available",
+                                style: TextStyle(
+                                  fontSize: 16.sp,
+                                  fontWeight: FontWeight.w700,
+                                  color: const Color(0xFF64748B),
+                                ),
+                              ),
+                              SizedBox(height: 6.h),
+                              Text(
+                                "Select items to start an order",
+                                style: TextStyle(
+                                  fontSize: 11.sp,
+                                  color: const Color(0xFF94A3B8),
+                                ),
+                              ),
+                            ],
+                          ),
+                        )
+                      : LayoutBuilder(
+                          builder: (context, constraints) {
+                            final double totalH = constraints.maxHeight;
 
-                      return hasOrdered
-                          ? Column(
-                              children: [
-                                if (controller
-                                    .biller
-                                    .newBatchItems
-                                    .isNotEmpty) ...[
-                                  ConstrainedBox(
-                                    constraints: BoxConstraints(
-                                      maxHeight: totalH * 0.75,
-                                    ),
-                                    child: Column(
-                                      mainAxisSize: MainAxisSize.min,
-                                      crossAxisAlignment:
-                                          CrossAxisAlignment.start,
-                                      children: [
-                                        Padding(
-                                          padding: EdgeInsets.fromLTRB(
-                                            12.w,
-                                            8.h,
-                                            12.w,
-                                            4.h,
+                            return hasOrdered
+                                ? Column(
+                                    children: [
+                                      if (controller
+                                          .biller
+                                          .newBatchItems
+                                          .isNotEmpty) ...[
+                                        ConstrainedBox(
+                                          constraints: BoxConstraints(
+                                            maxHeight: totalH * 0.75,
                                           ),
-                                          child: _SectionLabel(
-                                            label: "New order",
-                                            count: controller
-                                                .biller
-                                                .newBatchItems
-                                                .length,
-                                            color: const Color(0xFFF2994A),
+                                          child: Column(
+                                            mainAxisSize: MainAxisSize.min,
+                                            crossAxisAlignment:
+                                                CrossAxisAlignment.start,
+                                            children: [
+                                              Padding(
+                                                padding: EdgeInsets.fromLTRB(
+                                                  12.w,
+                                                  8.h,
+                                                  12.w,
+                                                  4.h,
+                                                ),
+                                                child: _SectionLabel(
+                                                  label: "New order",
+                                                  count: controller
+                                                      .biller
+                                                      .newBatchItems
+                                                      .length,
+                                                  color: const Color(
+                                                    0xFFF2994A,
+                                                  ),
+                                                ),
+                                              ),
+                                              Flexible(
+                                                child: ListView(
+                                                  padding: EdgeInsets.symmetric(
+                                                    horizontal: 8.w,
+                                                  ),
+                                                  shrinkWrap: true,
+                                                  children: controller
+                                                      .biller
+                                                      .newBatchItems
+                                                      .map((item) {
+                                                        final MenuModel
+                                                        menu = controller
+                                                            .batchItemtoMenuItem(
+                                                              item,
+                                                            );
+                                                        final double linePrice =
+                                                            (double.tryParse(
+                                                                  menu.effectivePrice ??
+                                                                      "0",
+                                                                ) ??
+                                                                0) *
+                                                            (item.quantity ??
+                                                                1);
+                                                        return _ItemRow(
+                                                          qty:
+                                                              item.quantity ??
+                                                              1,
+                                                          title:
+                                                              menu.name ?? "",
+                                                          price: linePrice,
+                                                          isPending: true,
+
+                                                          onAdd: () =>
+                                                              controller.biller
+                                                                  .addToBatch(
+                                                                    menu,
+                                                                  ),
+                                                          onRemove: () =>
+                                                              controller.biller
+                                                                  .removeFromBatch(
+                                                                    menu,
+                                                                  ),
+                                                        );
+                                                      })
+                                                      .toList(),
+                                                ),
+                                              ),
+                                            ],
                                           ),
                                         ),
-                                        Flexible(
-                                          child: ListView(
-                                            padding: EdgeInsets.symmetric(
-                                              horizontal: 8.w,
+
+                                        Divider(
+                                          height: 1,
+                                          thickness: 1,
+                                          color: const Color(0xFFE2E8F0),
+                                        ),
+                                      ],
+                                      // Ordered items — takes remaining space
+                                      Expanded(
+                                        child: Column(
+                                          crossAxisAlignment:
+                                              CrossAxisAlignment.start,
+                                          children: [
+                                            Padding(
+                                              padding: EdgeInsets.fromLTRB(
+                                                12.w,
+                                                8.h,
+                                                12.w,
+                                                4.h,
+                                              ),
+                                              child: _SectionLabel(
+                                                label: "Ordered",
+                                                count: controller
+                                                    .biller
+                                                    .billSummary!
+                                                    .items!
+                                                    .length,
+                                                color: const Color(0xFF10B981),
+                                              ),
                                             ),
-                                            shrinkWrap: true,
-                                            children: controller
-                                                .biller
-                                                .newBatchItems
-                                                .map((item) {
+                                            Expanded(
+                                              child: ListView(
+                                                padding: EdgeInsets.symmetric(
+                                                  horizontal: 8.w,
+                                                ),
+                                                children: controller.biller.billSummary!.items!.map((
+                                                  item,
+                                                ) {
                                                   final MenuModel menu =
-                                                      controller
-                                                          .batchItemtoMenuItem(
-                                                            item,
-                                                          );
+                                                      controller.menuFromId(
+                                                        item.menuItem!.id!,
+                                                      );
                                                   final double linePrice =
                                                       (double.tryParse(
                                                             menu.effectivePrice ??
@@ -326,33 +453,47 @@ class BillSummaryView extends StatelessWidget {
                                                   return _ItemRow(
                                                     qty: item.quantity ?? 1,
                                                     title: menu.name ?? "",
-                                                    price: linePrice,
-                                                    isPending: true,
-
-                                                    onAdd: () => controller
-                                                        .biller
-                                                        .addToBatch(menu),
-                                                    onRemove: () => controller
-                                                        .biller
-                                                        .removeFromBatch(menu),
+                                                    price: double.parse(
+                                                      item.totalPrice ?? "0",
+                                                    ),
+                                                    status: item.status,
+                                                    isPending: false,
+                                                    onCancelItem: () {
+                                                      CancelItemDialog.show(
+                                                        context,
+                                                        itemName:
+                                                            item.name ?? "",
+                                                        onConfirm: (reason) {
+                                                          controller.biller
+                                                              .cancelBatchItem(
+                                                                sessionId:
+                                                                    controller
+                                                                        .biller
+                                                                        .selectedSessionId ??
+                                                                    "",
+                                                                batchId:
+                                                                    item.batchId ??
+                                                                    "",
+                                                                itemId:
+                                                                    item.id ??
+                                                                    "",
+                                                                cancelReason:
+                                                                    reason,
+                                                              );
+                                                        },
+                                                      );
+                                                    },
                                                   );
-                                                })
-                                                .toList(),
-                                          ),
+                                                }).toList(),
+                                              ),
+                                            ),
+                                          ],
                                         ),
-                                      ],
-                                    ),
-                                  ),
-
-                                  Divider(
-                                    height: 1,
-                                    thickness: 1,
-                                    color: const Color(0xFFE2E8F0),
-                                  ),
-                                ],
-                                // Ordered items — takes remaining space
-                                Expanded(
-                                  child: Column(
+                                      ),
+                                    ],
+                                  )
+                                // ── No ordered items: new order fills everything ──
+                                : Column(
                                     crossAxisAlignment:
                                         CrossAxisAlignment.start,
                                     children: [
@@ -364,13 +505,12 @@ class BillSummaryView extends StatelessWidget {
                                           4.h,
                                         ),
                                         child: _SectionLabel(
-                                          label: "Ordered",
+                                          label: "New order",
                                           count: controller
                                               .biller
-                                              .billSummary!
-                                              .items!
+                                              .newBatchItems
                                               .length,
-                                          color: const Color(0xFF10B981),
+                                          color: const Color(0xFFF2994A),
                                         ),
                                       ),
                                       Expanded(
@@ -380,13 +520,13 @@ class BillSummaryView extends StatelessWidget {
                                           ),
                                           children: controller
                                               .biller
-                                              .billSummary!
-                                              .items!
+                                              .newBatchItems
                                               .map((item) {
                                                 final MenuModel menu =
-                                                    controller.menuFromId(
-                                                      item.menuItem!.id!,
-                                                    );
+                                                    controller
+                                                        .batchItemtoMenuItem(
+                                                          item,
+                                                        );
                                                 final double linePrice =
                                                     (double.tryParse(
                                                           menu.effectivePrice ??
@@ -397,95 +537,22 @@ class BillSummaryView extends StatelessWidget {
                                                 return _ItemRow(
                                                   qty: item.quantity ?? 1,
                                                   title: menu.name ?? "",
-                                                  price: double.parse(
-                                                    item.totalPrice ?? "0",
-                                                  ),
-                                                  status: item.status,
-                                                  isPending: false,
-                                                  onCancelItem: () {
-                                                    CancelItemDialog.show(
-                                                      context,
-                                                      itemName: item.name ?? "",
-                                                      onConfirm: (reason) {
-                                                        controller.biller
-                                                            .cancelBatchItem(
-                                                              sessionId:
-                                                                  controller
-                                                                      .biller
-                                                                      .selectedSessionId ??
-                                                                  "",
-                                                              batchId:
-                                                                  item.batchId ??
-                                                                  "",
-                                                              itemId:
-                                                                  item.id ?? "",
-                                                              cancelReason:
-                                                                  reason,
-                                                            );
-                                                      },
-                                                    );
-                                                  },
+                                                  price: linePrice,
+                                                  isPending: true,
+                                                  onAdd: () => controller.biller
+                                                      .addToBatch(menu),
+                                                  onRemove: () => controller
+                                                      .biller
+                                                      .removeFromBatch(menu),
                                                 );
                                               })
                                               .toList(),
                                         ),
                                       ),
                                     ],
-                                  ),
-                                ),
-                              ],
-                            )
-                          // ── No ordered items: new order fills everything ──
-                          : Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Padding(
-                                  padding: EdgeInsets.fromLTRB(
-                                    12.w,
-                                    8.h,
-                                    12.w,
-                                    4.h,
-                                  ),
-                                  child: _SectionLabel(
-                                    label: "New order",
-                                    count:
-                                        controller.biller.newBatchItems.length,
-                                    color: const Color(0xFFF2994A),
-                                  ),
-                                ),
-                                Expanded(
-                                  child: ListView(
-                                    padding: EdgeInsets.symmetric(
-                                      horizontal: 8.w,
-                                    ),
-                                    children: controller.biller.newBatchItems
-                                        .map((item) {
-                                          final MenuModel menu = controller
-                                              .batchItemtoMenuItem(item);
-                                          final double linePrice =
-                                              (double.tryParse(
-                                                    menu.effectivePrice ?? "0",
-                                                  ) ??
-                                                  0) *
-                                              (item.quantity ?? 1);
-                                          return _ItemRow(
-                                            qty: item.quantity ?? 1,
-                                            title: menu.name ?? "",
-                                            price: linePrice,
-                                            isPending: true,
-                                            onAdd: () => controller.biller
-                                                .addToBatch(menu),
-                                            onRemove: () => controller.biller
-                                                .removeFromBatch(menu),
-                                          );
-                                        })
-                                        .toList(),
-                                  ),
-                                ),
-                              ],
-                            );
-                    },
-                  ),
+                                  );
+                          },
+                        ),
                 ),
 
                 Container(
@@ -929,6 +996,65 @@ class _OnlineOrderNavigator extends StatelessWidget {
 
           GestureDetector(
             onTap: controller.nextOnlineOrder,
+            child: Icon(Icons.chevron_right, size: 16.sp, color: Colors.blue),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _WalkInNavigator extends StatelessWidget {
+  final DashboardController controller;
+
+  const _WalkInNavigator(this.controller);
+
+  @override
+  Widget build(BuildContext context) {
+    final order = controller.selectedWalkInSession;
+
+    if (order == null) {
+      return Text(
+        "No Customers",
+        style: TextStyle(fontSize: 10.sp, color: Colors.grey),
+      );
+    }
+
+    return Container(
+      margin: EdgeInsets.only(top: 4.h),
+      padding: EdgeInsets.symmetric(horizontal: 6.w, vertical: 4.h),
+      decoration: BoxDecoration(
+        color: const Color(0xFFF8FAFC),
+        borderRadius: BorderRadius.circular(6.r),
+      ),
+      child: Row(
+        children: [
+          GestureDetector(
+            onTap: controller.previousWalkInCustomer,
+            child: Icon(Icons.chevron_left, size: 16.sp, color: Colors.blue),
+          ),
+
+          Expanded(
+            child: Column(
+              children: [
+                Text(
+                  order.customerName ?? '--',
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    fontSize: 12.sp,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                Text(
+                  "${controller.selectedWalkInIndex + 1}/${controller.walkInSessions.length}",
+                  style: TextStyle(fontSize: 9.sp, color: Colors.grey),
+                ),
+              ],
+            ),
+          ),
+
+          GestureDetector(
+            onTap: controller.nextWalkInCustomer,
             child: Icon(Icons.chevron_right, size: 16.sp, color: Colors.blue),
           ),
         ],

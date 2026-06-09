@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:fluttertoast/fluttertoast.dart';
 import 'package:get/get.dart';
 import 'package:toasttab/Screens/BillerDashboard/Service/DashBoardContoller.dart';
 
@@ -65,7 +66,6 @@ class TableStatusView extends StatelessWidget {
                       ),
                     ),
 
-                 
                     _QuickActionCard(
                       icon: Icons.person_add_alt_1,
                       title: "New Customer",
@@ -119,6 +119,7 @@ class TableStatusView extends StatelessWidget {
                                           ),
                                         ),
                                       ],
+                                      
                                     ),
 
                                     SizedBox(height: 20.h),
@@ -214,6 +215,22 @@ class TableStatusView extends StatelessWidget {
                                         Expanded(
                                           child: ElevatedButton(
                                             onPressed: () {
+                                              if (nameCtrl.text
+                                                  .trim()
+                                                  .isEmpty) {
+                                                Fluttertoast.showToast(
+                                                  msg:
+                                                      "Please enter customer name",
+                                                  toastLength:
+                                                      Toast.LENGTH_SHORT,
+                                                  gravity: ToastGravity.TOP,
+                                                  backgroundColor: Colors.black,
+                                                  textColor: Colors.red,
+                                                  fontSize: 14,
+                                                );
+                                                return;
+                                              }
+
                                               Navigator.pop(
                                                 context,
                                                 nameCtrl.text.trim(),
@@ -265,6 +282,19 @@ class TableStatusView extends StatelessWidget {
                         await controller.biller.startSession(
                           customerName: customerName,
                         );
+                        await controller.fetchWalkInCustomers();
+                        await controller.fetchWalkInCustomers();
+
+final newSessionId = controller.biller.selectedSessionId;
+
+final index = controller.walkInSessions.indexWhere(
+  (e) => e.id == newSessionId,
+);
+
+if (index != -1) {
+  controller.selectedWalkInIndex = index;
+  await controller.loadSelectedWalkInCustomer();
+}
                       },
                     ),
 
@@ -333,40 +363,85 @@ class TableStatusView extends StatelessWidget {
                           ),
 
                           if (controller.showOnlineOrders)
-                            Container(
-                              decoration: const BoxDecoration(
-                                border: Border(
-                                  top: BorderSide(color: Color(0xFFE2E8F0)),
-                                ),
-                              ),
-                              child: Column(
-                                children: [
-                                  _OnlinePlatformTile(
-                                    title: "ONLINE_OWN",
-                                    icon: Icons.language,
-                                    onTap: () {
-                                      controller.selectPlatform("ONLINE_OWN");
-                                    },
-                                  ),
+  Container(
+    decoration: const BoxDecoration(
+      border: Border(
+        top: BorderSide(color: Color(0xFFE2E8F0)),
+      ),
+    ),
+    child: Column(
+      children: [
+        _OnlinePlatformTile(
+          title: "ONLINE_OWN",
+          icon: Icons.language,
+          isSelected:
+              controller.selectedOnlinePlatform == "ONLINE_OWN",
+          onTap: () {
+            controller.selectPlatform("ONLINE_OWN");
+          },
+        ),
 
-                                  _OnlinePlatformTile(
-                                    title: "UBER_EATS",
-                                    icon: Icons.delivery_dining,
-                                    onTap: () {
-                                      controller.selectPlatform("UBER_EATS");
-                                    },
-                                  ),
+        _OnlinePlatformTile(
+          title: "UBER_EATS",
+          icon: Icons.delivery_dining,
+          isSelected:
+              controller.selectedOnlinePlatform == "UBER_EATS",
+          onTap: () {
+            controller.selectPlatform("UBER_EATS");
+          },
+        ),
 
-                                  _OnlinePlatformTile(
-                                    title: "DOORDASH",
-                                    icon: Icons.shopping_bag_outlined,
-                                    onTap: () {
-                                      controller.selectPlatform("DOORDASH");
-                                    },
-                                  ),
-                                ],
-                              ),
+        _OnlinePlatformTile(
+          title: "DOORDASH",
+          icon: Icons.shopping_bag_outlined,
+          isSelected:
+              controller.selectedOnlinePlatform == "DOORDASH",
+          onTap: () {
+            controller.selectPlatform("DOORDASH");
+          },
+        ),
+
+        if (controller.selectedOnlinePlatform.isNotEmpty)
+          Container(
+            padding: EdgeInsets.symmetric(
+              vertical: 16.h,
+              horizontal: 12.w,
+            ),
+            child: controller.isLoadingOnlineOrders
+                ? const Center(
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  )
+                : controller.onlineSessions.isEmpty
+                    ? Column(
+                        children: [
+                          Icon(
+                            Icons.receipt_long_outlined,
+                            size: 30.sp,
+                            color: const Color(0xFFCBD5E1),
+                          ),
+                          SizedBox(height: 6.h),
+                          Text(
+                            "No Orders Found",
+                            style: TextStyle(
+                              fontSize: 12.sp,
+                              color: const Color(0xFF94A3B8),
+                              fontWeight: FontWeight.w600,
                             ),
+                          ),
+                        ],
+                      )
+                    : Text(
+                        "${controller.onlineSessions.length} order(s) found",
+                        style: TextStyle(
+                          fontSize: 12.sp,
+                          fontWeight: FontWeight.w600,
+                          color: const Color(0xFF16A34A),
+                        ),
+                      ),
+          ),
+      ],
+    ),
+  ),
                         ],
                       ),
                     ),
@@ -779,11 +854,13 @@ class _OnlinePlatformTile extends StatelessWidget {
   final String title;
   final IconData icon;
   final VoidCallback onTap;
+  final bool isSelected;
 
   const _OnlinePlatformTile({
     required this.title,
     required this.icon,
     required this.onTap,
+    this.isSelected = false,
   });
 
   @override
@@ -791,13 +868,29 @@ class _OnlinePlatformTile extends StatelessWidget {
     return InkWell(
       onTap: onTap,
       child: Container(
-        padding: EdgeInsets.symmetric(horizontal: 14.w, vertical: 10.h),
-        decoration: const BoxDecoration(
-          border: Border(bottom: BorderSide(color: Color(0xFFF1F5F9))),
+        padding: EdgeInsets.symmetric(
+          horizontal: 14.w,
+          vertical: 10.h,
+        ),
+        decoration: BoxDecoration(
+          color: isSelected
+              ? const Color(0xFFEFF6FF)
+              : Colors.white,
+          border: const Border(
+            bottom: BorderSide(
+              color: Color(0xFFF1F5F9),
+            ),
+          ),
         ),
         child: Row(
           children: [
-            Icon(icon, size: 18, color: Color(0xFF2F80ED)),
+            Icon(
+              icon,
+              size: 18,
+              color: isSelected
+                  ? const Color(0xFF2563EB)
+                  : const Color(0xFF2F80ED),
+            ),
 
             SizedBox(width: 10.w),
 
@@ -807,19 +900,29 @@ class _OnlinePlatformTile extends StatelessWidget {
                 style: TextStyle(
                   fontSize: 12.sp,
                   fontWeight: FontWeight.w600,
-                  color: const Color(0xFF334155),
+                  color: isSelected
+                      ? const Color(0xFF2563EB)
+                      : const Color(0xFF334155),
                 ),
               ),
             ),
 
-            Icon(
-              Icons.arrow_forward_ios,
-              size: 10.sp,
-              color: Color(0xFF94A3B8),
-            ),
+            if (isSelected)
+              Icon(
+                Icons.check_circle,
+                size: 16.sp,
+                color: const Color(0xFF2563EB),
+              )
+            else
+              Icon(
+                Icons.arrow_forward_ios,
+                size: 10.sp,
+                color: const Color(0xFF94A3B8),
+              ),
           ],
         ),
       ),
     );
   }
 }
+

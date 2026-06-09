@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
 import 'package:toasttab/Screens/BillerDashboard/Views/AppHeader.dart';
+import 'package:toasttab/Screens/BillerDashboard/Views/MenuListingView.dart';
 import 'package:toasttab/Screens/Kitchen/Service/KitchenController.dart';
 import 'Views/KanbanColumn.dart';
 
@@ -82,6 +83,27 @@ class _TopBar extends StatelessWidget {
       padding: EdgeInsets.fromLTRB(16.w, 12.h, 16.w, 10.h),
       child: Row(
         children: [
+
+
+           InkWell(
+      onTap: () {
+        Get.to(() => const MenuListingView());
+      },
+      borderRadius: BorderRadius.circular(7.r),
+      child: Container(
+        width: 30.w,
+        height: 30.w,
+        decoration: BoxDecoration(
+          color: const Color(0xFFEFF6FF),
+          borderRadius: BorderRadius.circular(7.r),
+        ),
+        child: Icon(
+          Icons.restaurant_menu,
+          size: 15.sp,
+          color: const Color(0xFF2F80ED),
+        ),
+      ),
+    ),
           Container(
             width: 30.w,
             height: 30.w,

@@ -4,13 +4,12 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import 'package:http/http.dart' as http;
-import 'package:shared_preferences/shared_preferences.dart';
+
 import 'package:toasttab/Screens/AuthenticationScreen/AuthenticationScreen.dart';
 import 'package:toasttab/Screens/BillerDashboard/Models/Request/BatchItemRequest.dart';
 import 'package:toasttab/Screens/BillerDashboard/Models/Response/CustomerModel.dart';
 import 'package:toasttab/Screens/BillerDashboard/Models/Response/MenuModel.dart';
 import 'package:toasttab/Screens/BillerDashboard/Models/Response/OnlineSessionModel.dart';
-import 'package:toasttab/Screens/BillerDashboard/Models/Response/Ordersession.dart';
 import 'package:toasttab/Screens/BillerDashboard/Models/Response/SessionModel.dart';
 import 'package:toasttab/Screens/BillerDashboard/Models/Response/TableModel.dart';
 import 'package:toasttab/Screens/BillerDashboard/Models/Response/UserModel.dart';
@@ -38,6 +37,14 @@ class DashboardController extends GetxController {
 
   bool get isOnlineOrderSelected =>
       selectedOnlinePlatform.isNotEmpty && onlineSessions.isNotEmpty;
+      
+
+  List<OnlineSession> walkInSessions = [];
+
+bool isLoadingWalkIns = false;
+bool showWalkInCustomers = false;
+
+bool get isWalkInSelected => walkInSessions.isNotEmpty;
 
   void showToast(String message, {bool isError = false}) {
     Fluttertoast.showToast(
@@ -53,7 +60,8 @@ class DashboardController extends GetxController {
     showOnlineOrders = !showOnlineOrders;
     update();
   }
-
+  
+  
   Future<void> selectPlatform(String platform) async {
     selectedOnlinePlatform = platform;
     biller.selectedTable = null;
@@ -96,23 +104,11 @@ class DashboardController extends GetxController {
 
   Future<void> loadSelectedOnlineOrder() async {
     try {
-      log("========== LOAD SELECTED ONLINE ORDER ==========");
-
       final order = selectedOnlineOrder;
-
-      log("SELECTED INDEX => $selectedOnlineOrderIndex");
-      log("TOTAL ONLINE ORDERS => ${onlineSessions.length}");
-
       if (order == null) {
         log("ORDER IS NULL");
         return;
       }
-
-      log("ORDER ID => ${order.id}");
-      log("SESSION NUMBER => ${order.sessionNumber}");
-      log("CUSTOMER NAME => ${order.customerName}");
-      log("CHANNEL => ${order.channel}");
-      log("TOTAL AMOUNT => ${order.totalAmount}");
 
       biller.selectedSession = SessionModel(
         id: order.id,
@@ -121,28 +117,11 @@ class DashboardController extends GetxController {
       );
 
       biller.selectedSessionId = order.id;
-
-      log("BILLER SESSION ID => ${biller.selectedSessionId}");
-
-      log("CALLING fetchSessionDetail(${order.id})");
-
       await biller.fetchSessionDetail(order.id!);
-
-      log("FETCH SESSION DETAIL COMPLETED");
-
-      log("SUBTOTAL => ${biller.subTotalAmount}");
-      log("TAX => ${biller.taxAmount}");
-      log("TOTAL => ${biller.totalAmount}");
-
-      log("ITEM COUNT => ${biller.billSummary?.items?.length ?? 0}");
-
-      log("===============================================");
 
       update();
     } catch (e, stack) {
-      log("========== LOAD ONLINE ORDER ERROR ==========");
-      log("ERROR => $e");
-      log("STACK => $stack");
+
     }
   }
 
@@ -346,6 +325,95 @@ class DashboardController extends GetxController {
       update();
     }
   }
+   int selectedWalkInIndex = 0;
+
+OnlineSession? get selectedWalkInSession {
+  if (walkInSessions.isEmpty) return null;
+
+  if (selectedWalkInIndex >= walkInSessions.length) {
+    selectedWalkInIndex = 0;
+  }
+
+  return walkInSessions[selectedWalkInIndex];
+}
+
+void nextWalkInCustomer() {
+  if (walkInSessions.isEmpty) return;
+
+  selectedWalkInIndex =
+      (selectedWalkInIndex + 1) % walkInSessions.length;
+
+  loadSelectedWalkInCustomer();
+}
+
+void previousWalkInCustomer() {
+  if (walkInSessions.isEmpty) return;
+
+  selectedWalkInIndex =
+      (selectedWalkInIndex - 1 + walkInSessions.length) %
+      walkInSessions.length;
+
+  loadSelectedWalkInCustomer();
+}
+
+Future<void> loadSelectedWalkInCustomer() async {
+  try {
+    final session = selectedWalkInSession;
+
+    if (session == null) return;
+
+    biller.selectedTable = null;
+    biller.isCustomerOrder = true;
+
+    biller.selectedSession = SessionModel(
+      id: session.id,
+      customerName: session.customerName,
+      sessionNumber: session.sessionNumber,
+    );
+
+    biller.selectedSessionId = session.id;
+
+    await biller.fetchSessionDetail(session.id!);
+
+    update();
+  } catch (e) {
+    log(e.toString());
+  }
+}
+Future<void> fetchWalkInCustomers() async {
+  try {
+    isLoadingWalkIns = true;
+
+    walkInSessions.clear();
+
+    final response = await http.get(
+      Uri.parse(
+        "$baseUrl/orders/restaurants/$restaurantId/sessions?status=OPEN&channel=WALK_IN",
+      ),
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": "Bearer $authToken",
+      },
+    );
+
+    final decoded = jsonDecode(response.body);
+
+    if (response.statusCode == 200 &&
+        decoded["success"] == true) {
+
+      final model = OnlineSessionResponse.fromJson(decoded);
+
+      walkInSessions = model.data;
+
+      
+    }
+  } catch (e) {
+    showToast("Failed to load walk-in customers", isError: true);
+  } finally {
+    isLoadingWalkIns = false;
+    update();
+  }
+}
 
   @override
   void onInit() {

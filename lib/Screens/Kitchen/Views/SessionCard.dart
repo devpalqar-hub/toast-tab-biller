@@ -60,15 +60,21 @@ class SessionCard extends StatelessWidget {
                   SizedBox(width: 8.w),
 
                   // Table name
-                  Text(
-                    session.tableName.isNotEmpty ? session.tableName : "Table",
-                    style: TextStyle(
-                      fontSize: 12.sp,
-                      fontWeight: FontWeight.w700,
-                      color: const Color(0xFF0F172A),
-                      letterSpacing: -0.2,
-                    ),
-                  ),
+                 Text(
+  (session.channel == 'WALK_IN' || session.channel == 'ONLINE_OWN')
+      ? (session.customerName.isNotEmpty
+            ? session.customerName
+            : 'Guest')
+      : (session.tableName.isNotEmpty
+            ? session.tableName
+            : 'Table'),
+  style: TextStyle(
+    fontSize: 12.sp,
+    fontWeight: FontWeight.w700,
+    color: const Color(0xFF0F172A),
+    letterSpacing: -0.2,
+  ),
+),
                   SizedBox(width: 5.w),
 
                   // Session number badge — shows human-readable number

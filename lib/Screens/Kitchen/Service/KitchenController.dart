@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:math';
 import 'package:get/get.dart';
 import 'package:socket_io_client/socket_io_client.dart' as IO;
 import 'package:http/http.dart' as http;
@@ -74,6 +75,9 @@ class KitchenController extends GetxController {
     // ── batch:created → add batch to its session (create session if new) ─────
     _socket.on('batch:created', (raw) {
       final data = raw is String ? json.decode(raw) : raw;
+       
+       print("BATCH CREATED DATA");
+print(jsonEncode(data));
       final batch = KitchenBatch.fromJson(data);
 
       // Guard: skip if this batchId was already received (duplicate room emit)
@@ -85,12 +89,14 @@ class KitchenController extends GetxController {
         if (alreadyExists) return; // deduplicate
         existingSession.batches.add(batch);
       } else {
-        _sessionMap[batch.sessionId] = KitchenSession(
-          sessionId: batch.sessionId,
-          sessionNumber: batch.sessionNumber,
-          tableName: batch.tableName,
-          batches: [batch],
-        );
+       _sessionMap[batch.sessionId] = KitchenSession(
+  sessionId: batch.sessionId,
+  sessionNumber: batch.sessionNumber,
+  tableName: batch.tableName,
+  customerName: batch.customerName,
+  channel: batch.channel,
+  batches: [batch],
+);
       }
       update();
     });
@@ -190,6 +196,9 @@ class KitchenController extends GetxController {
       update();
     }
   }
+  
+
+  
 
   String? nextStatus(String current) => const {
     'PENDING': 'PREPARING',

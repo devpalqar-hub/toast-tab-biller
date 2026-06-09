@@ -32,6 +32,8 @@ class KitchenBatch {
   final String tableName;
   final String createdByName;
   final DateTime createdAt;
+  final String customerName;
+final String channel;
   List<KitchenBatchItem> items;
 
   KitchenBatch({
@@ -44,22 +46,28 @@ class KitchenBatch {
     required this.createdByName,
     required this.createdAt,
     required this.items,
+    required this.customerName,
+required this.channel,
   });
 
   factory KitchenBatch.fromJson(Map<String, dynamic> json) => KitchenBatch(
-    batchId: json['id'] ?? '',
-    batchNumber: json['batchNumber'] ?? '',
-    sessionId: json['session']?['id'] ?? '',
-    sessionNumber: json['session']?['sessionNumber'] ?? '',
-    tableId: json['session']?['tableId'] ?? '',
-    tableName:
-        json['session']?['table']?['name'] ?? json['session']?['tableId'] ?? '',
-    createdByName: json['createdBy']?['name'] ?? '',
-    createdAt: DateTime.tryParse(json['createdAt'] ?? '') ?? DateTime.now(),
-    items: (json['items'] as List? ?? [])
-        .map((i) => KitchenBatchItem.fromJson(i))
-        .toList(),
-  );
+  batchId: json['id'] ?? '',
+  batchNumber: json['batchNumber'] ?? '',
+  sessionId: json['session']?['id'] ?? '',
+  sessionNumber: json['session']?['sessionNumber'] ?? '',
+  tableId: json['session']?['tableId'] ?? '',
+  tableName:
+      json['session']?['table']?['name'] ??
+      json['session']?['tableId'] ??
+      '',
+  customerName: json['session']?['customerName'] ?? '',
+  channel: json['session']?['channel'] ?? '',
+  createdByName: json['createdBy']?['name'] ?? '',
+  createdAt: DateTime.tryParse(json['createdAt'] ?? '') ?? DateTime.now(),
+  items: (json['items'] as List? ?? [])
+      .map((i) => KitchenBatchItem.fromJson(i))
+      .toList(),
+);
 
   int get elapsedMinutes => DateTime.now().difference(createdAt).inMinutes;
 }
@@ -69,16 +77,21 @@ class KitchenSession {
   final String sessionId;
   final String sessionNumber;
   final String tableName;
+  final String customerName;
+final String channel;
   bool isBilled; // removed from "Ready" column when true
   List<KitchenBatch> batches;
+  
 
-  KitchenSession({
-    required this.sessionId,
-    required this.sessionNumber,
-    required this.tableName,
-    this.isBilled = false,
-    required this.batches,
-  });
+ KitchenSession({
+  required this.sessionId,
+  required this.sessionNumber,
+  required this.tableName,
+  required this.customerName,
+  required this.channel,
+  this.isBilled = false,
+  required this.batches,
+});
 
   // ── Derived column placement ───────────────────────────────────────────────
 

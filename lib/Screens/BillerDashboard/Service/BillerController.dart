@@ -30,6 +30,7 @@ class BillerController extends GetxController {
   bool isCustomerOrder = false;
   String customerName = "";
 
+  
   Future<void> fetchSessionDetail(String sessionId) async {
     try {
       String parms = "";
@@ -56,6 +57,7 @@ class BillerController extends GetxController {
 
       final url =
           "$baseUrl/orders/restaurants/$restaurantId/sessions/$sessionId/bill/preview?$parms";
+
       final response = await get(
         Uri.parse(url),
         headers: {
@@ -63,15 +65,15 @@ class BillerController extends GetxController {
           "Authorization": "Bearer $authToken",
         },
       );
-
       billSummary = null;
       update();
 
       if (response.statusCode == 200) {
         final decoded = json.decode(response.body);
-        billSummary = BillSummaryModel.fromJson(decoded["data"]);
 
-        log("BILL SUMMARY LOADED => ${billSummary != null}");
+        log("DECODED RESPONSE => ${jsonEncode(decoded)}");
+
+        billSummary = BillSummaryModel.fromJson(decoded["data"]);
 
         if (billSummary != null) {
           subTotalAmount = billSummary!.subtotal ?? "0";
@@ -79,7 +81,6 @@ class BillerController extends GetxController {
           totalAmount = billSummary!.totalAmount ?? "0";
 
           nameController.text = billSummary?.session?.customerName ?? "";
-
           phoneController.text = billSummary?.session?.customerPhone ?? "";
         } else {
           subTotalAmount = "0";
@@ -113,7 +114,6 @@ class BillerController extends GetxController {
 
         if (selectedTable != null) "guestCount": selectedTable?.seatCount,
       };
-
       final response = await post(
         Uri.parse(url),
         body: json.encode(requestBody),
@@ -122,8 +122,13 @@ class BillerController extends GetxController {
           "Authorization": "Bearer $authToken",
         },
       );
-
       if (response.statusCode == 200 || response.statusCode == 201) {
+        await fetchSessionDetail(sessionId);
+
+        try {
+          final decoded = jsonDecode(response.body);
+        } catch (_) {}
+
         billSummary = null;
         selectedSession = null;
         selectedSessionId = null;
@@ -137,14 +142,30 @@ class BillerController extends GetxController {
         phoneController.clear();
 
         DashboardController ctrl = Get.find();
+     
+      
 
+if (isCustomerOrder) {
+  await ctrl.fetchWalkInCustomers();
+}
+
+if (ctrl.selectedOnlinePlatform.isNotEmpty) {
+  await ctrl.fetchOnlineOrders(
+    ctrl.selectedOnlinePlatform,
+  );
+}
         await ctrl.fetchTables();
 
         update();
       } else {
-        debugPrint("Checkout failed");
+        log("CHECKOUT FAILED");
+        log("STATUS => ${response.statusCode}");
+        log("BODY => ${response.body}");
       }
-    } catch (e, stackTrace) {}
+    } catch (e, stackTrace) {
+      log("CHECKOUT ERROR => $e");
+      log("STACKTRACE => $stackTrace");
+    }
   }
 
   selectTable(TableData table, List<SessionModel> sessions) {
@@ -170,10 +191,15 @@ class BillerController extends GetxController {
     } else {
       selectedSession = null;
       selectedSessionId = null;
+
+
       update();
     }
     dbCtrl.selectedOnlinePlatform = "";
     dbCtrl.selectedOnlineOrderIndex = 0;
+    dbCtrl.walkInSessions.clear();
+dbCtrl.selectedWalkInIndex = 0;
+
     dbCtrl.update();
     update();
   }
@@ -208,13 +234,13 @@ class BillerController extends GetxController {
   }
 
   startSession({String? tableID, int? guestCount, String? customerName}) async {
-    final body = {
-      "channel": "DINE_IN",
-      if (tableID != null) "tableId": tableID,
-      if (guestCount != null) "guestCount": guestCount,
-      if (customerName != null && customerName.isNotEmpty)
-        "customerName": customerName,
-    };
+   final body = {
+  "channel": isCustomerOrder ? "WALK_IN" : "DINE_IN",
+  if (tableID != null) "tableId": tableID,
+  if (guestCount != null) "guestCount": guestCount,
+  if (customerName != null && customerName.isNotEmpty)
+    "customerName": customerName,
+};
 
     final url = "$baseUrl/orders/restaurants/$restaurantId/sessions";
 
@@ -229,6 +255,7 @@ class BillerController extends GetxController {
       body: json.encode(body),
     );
     if (response.statusCode == 200 || response.statusCode == 201) {
+      log("START SESSION BODY => ${jsonEncode(body)}");
       DashboardController dashController = Get.find();
 
       selectedSession = SessionModel.fromJson(
@@ -334,6 +361,16 @@ class BillerController extends GetxController {
       fetchSessionDetail(sessionId);
 
       final DashboardController ctrl = Get.find();
+
+     if (isCustomerOrder) {
+  await ctrl.fetchWalkInCustomers();
+}
+
+if (ctrl.selectedOnlinePlatform.isNotEmpty) {
+  await ctrl.fetchOnlineOrders(
+    ctrl.selectedOnlinePlatform,
+  );
+}
       ctrl.fetchAllPendingSession();
       ctrl.fetchTables();
       ctrl.update();
