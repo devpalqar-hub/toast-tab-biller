@@ -1,9 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
+import 'package:toasttab/Screens/BillerDashboard/Service/DashBoardContoller.dart';
 import 'package:toasttab/Screens/BillerDashboard/Views/AppHeader.dart';
-import 'package:toasttab/Screens/BillerDashboard/Views/MenuListingView.dart';
+import 'package:toasttab/Screens/BillerDashboard/Views/MenuListingContent.dart';
+
+
 import 'package:toasttab/Screens/Kitchen/Service/KitchenController.dart';
+import 'package:toasttab/Screens/Kitchen/Views/MenuList.dart';
 import 'Views/KanbanColumn.dart';
 
 class KitchenScreen extends StatelessWidget {
@@ -11,9 +15,16 @@ class KitchenScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+     if (!Get.isRegistered<DashboardController>()) {
+      Get.put(DashboardController());
+    }
+    print(
+  "DashboardController HashCode: ${Get.find<DashboardController>().hashCode}",
+);
     return GetBuilder<KitchenController>(
       init: KitchenController(),
       builder: (controller) {
+          print("showMenuPanel = ${controller.showMenuPanel}");
         return Scaffold(
           backgroundColor: const Color(0xFFF1F5F9),
           body: Column(
@@ -22,47 +33,61 @@ class KitchenScreen extends StatelessWidget {
               _TopBar(controller: controller),
 
               // ── Kanban board ───────────────────────────
+             Expanded(
+  child: Padding(
+    padding: EdgeInsets.all(10.w),
+    child: Row(
+      children: [
+
+        if (controller.showMenuPanel)
+        if (controller.showMenuPanel)
+  SizedBox(
+    width: 350.w,
+    height: double.infinity,
+    child: Card(
+      margin: EdgeInsets.only(right: 10.w),
+      child: MenuList(),
+    ),
+  ),
+
+        Expanded(
+          child: Row(
+            children: [
               Expanded(
-                child: Padding(
-                  padding: EdgeInsets.all(10.w),
-                  child: Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      // PENDING column
-                      Expanded(
-                        child: KanbanColumn(
-                          title: "Pending",
-                          sessions: controller.pendingSessions,
-                          accentColor: const Color(0xFFF2994A),
-                          controller: controller,
-                        ),
-                      ),
-                      SizedBox(width: 8.w),
-
-                      // PREPARING column
-                      Expanded(
-                        child: KanbanColumn(
-                          title: "Preparing",
-                          sessions: controller.preparingSessions,
-                          accentColor: const Color(0xFF2F80ED),
-                          controller: controller,
-                        ),
-                      ),
-                      SizedBox(width: 8.w),
-
-                      // READY column (disappears when billed)
-                      Expanded(
-                        child: KanbanColumn(
-                          title: "Ready",
-                          sessions: controller.readySessions,
-                          accentColor: const Color(0xFF10B981),
-                          controller: controller,
-                        ),
-                      ),
-                    ],
-                  ),
+                child: KanbanColumn(
+                  title: "Pending",
+                  sessions: controller.pendingSessions,
+                  accentColor: const Color(0xFFF2994A),
+                  controller: controller,
                 ),
               ),
+              SizedBox(width: 8.w),
+
+              Expanded(
+                child: KanbanColumn(
+                  title: "Preparing",
+                  sessions: controller.preparingSessions,
+                  accentColor: const Color(0xFF2F80ED),
+                  controller: controller,
+                ),
+              ),
+              SizedBox(width: 8.w),
+
+              Expanded(
+                child: KanbanColumn(
+                  title: "Ready",
+                  sessions: controller.readySessions,
+                  accentColor: const Color(0xFF10B981),
+                  controller: controller,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
+    ),
+  ),
+)
             ],
           ),
         );
@@ -86,9 +111,11 @@ class _TopBar extends StatelessWidget {
 
 
            InkWell(
+     
       onTap: () {
-        Get.to(() => const MenuListingView());
-      },
+  controller.toggleMenuPanel();
+},
+      
       borderRadius: BorderRadius.circular(7.r),
       child: Container(
         width: 30.w,
@@ -104,6 +131,8 @@ class _TopBar extends StatelessWidget {
         ),
       ),
     ),
+
+    SizedBox(width: 10.w),
           Container(
             width: 30.w,
             height: 30.w,
@@ -207,3 +236,4 @@ class _StatPill extends StatelessWidget {
     ),
   );
 }
+

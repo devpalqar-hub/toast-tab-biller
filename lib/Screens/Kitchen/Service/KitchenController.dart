@@ -29,6 +29,17 @@ class KitchenController extends GetxController {
     super.onClose();
   }
 
+  
+  bool showMenuPanel = false;
+
+void toggleMenuPanel() {
+  showMenuPanel = !showMenuPanel;
+
+  print("showMenuPanel changed to: $showMenuPanel");
+
+  update();
+}
+
   // ── Column accessors ───────────────────────────────────────────────────────
   List<KitchenSession> _col(String col) =>
       _sessionMap.values.where((s) => s.column == col).toList()
